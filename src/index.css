@@ -1,0 +1,92 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --primary-navy: #0f172a;
+  --accent-blue: #2563eb;
+  --bg-slate: #f8fafc;
+  --border-gray: #e2e8f0;
+}
+
+body {
+  background-color: var(--bg-slate);
+  color: #1e293b;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.85rem;
+  min-height: 100dvh;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Page Content Container */
+.page-content {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  border: 1px solid var(--border-gray);
+  padding: 0.75rem;
+}
+
+/* Glass effect - Updated for professional look */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.modal-backdrop {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Typography Overrides */
+.text-navy { color: var(--primary-navy); }
+.bg-navy { background-color: var(--primary-navy); }
+
+/* Animation - Subtle Floating */
+@keyframes soft-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-soft-float {
+  animation: soft-float 4s ease-in-out infinite;
+}
+
+
+/* Global Table Compaction */
+table th, table td {
+  padding: 0.5rem 1rem !important; /* Overriding common utility classes like px-6 py-4 */
+}
+
+/* Redefining some tailwind utility defaults if needed directly */
+.space-y-6 > * + * {
+  margin-top: 1rem !important;
+}
+
+.space-y-4 > * + * {
+  margin-top: 0.75rem !important;
+}
+
+.gap-4 {
+  gap: 0.75rem !important;
+}
+
+.p-4 {
+  padding: 0.75rem !important;
+}
+
+/* iOS Safe Areas */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 1rem) !important; }
+  .pt-safe { padding-top: max(env(safe-area-inset-top), 1rem) !important; }
+}
