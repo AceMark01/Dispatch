@@ -199,16 +199,9 @@ const ConfirmPage = () => {
                     <h3 className="font-bold text-slate-800 text-sm">{item.itemDetails}</h3>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase ${
-                  item.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                  item.status === 'Dispatched' ? 'bg-blue-100 text-blue-700' :
-                  'bg-purple-100 text-purple-700'
-                }`}>
-                  {item.status === 'Approved' ? 'Pending Confirm' : item.status}
-                </span>
               </div>
               <div className="flex justify-between items-center text-xs text-slate-600 bg-slate-50 p-2 rounded gap-2">
-                <div className="flex-1">Qty: <span className="font-bold">{item.qty} {item.unit}</span></div>
+                <div className="flex-1">Qty: <span className="font-bold">{item.qty}</span> <span className="text-[10px] text-slate-400 font-bold uppercase ml-0.5">{item.unit}</span></div>
                 {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
                   <div className="flex gap-1 flex-1 animate-in slide-in-from-right-2">
                     <select 
@@ -272,10 +265,11 @@ const ConfirmPage = () => {
                 </th>
                 <th className="px-4 py-3 w-16">SN</th>
                 {activeTab === 'Pending' && <th className="px-4 py-3 w-32 text-center">Action</th>}
-                <th className="px-4 py-3 w-24">Qty</th>
-                <th className="px-4 py-3 w-48">Remark</th>
                 <th className="px-4 py-3">Item Details</th>
-                <th className="px-4 py-3 text-center w-24">Status</th>
+                <th className="px-4 py-3">Group</th>
+                <th className="px-4 py-3">Item Code</th>
+                <th className="px-4 py-3 w-24 text-right">Qty</th>
+                <th className="px-4 py-3 w-16 text-center">Unit</th>
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}
               </tr>
             </thead>
@@ -328,34 +322,20 @@ const ConfirmPage = () => {
                     </td>
                   )}
 
-                  <td className="px-4 py-3 font-bold text-slate-800">
-                    {item.qty} {item.unit}
+                  <td className="px-4 py-3 font-bold text-slate-800">{item.itemDetails}</td>
+                  <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
+                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.itemCode}</td>
+
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">
+                    {item.qty}
+                  </td>
+                  <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">
+                    {item.unit}
                   </td>
 
-                  <td className="px-4 py-3">
-                    <span className="text-slate-500 italic truncate max-w-[150px] block">{item.remark || '-'}</span>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="font-bold text-slate-800">{item.itemDetails}</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono uppercase">{item.itemCode}</span>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase">{item.group}</span>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                      item.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700 shadow-sm' :
-                      item.status === 'Rejected' ? 'bg-red-100 text-red-700 shadow-sm' :
-                      'bg-purple-100 text-purple-700 shadow-sm'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </td>
                   {activeTab === 'History' && (
                     <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium">
-                      {new Date(item.confirmedAt || item.uploadedAt).toLocaleString()}
+                      {new Date(item.confirmedAt || item.uploadedAt).toLocaleDateString()}
                     </td>
                   )}
                 </tr>

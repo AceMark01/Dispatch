@@ -215,27 +215,30 @@ const DispatchPage = () => {
                     <h3 className="font-bold text-slate-800 text-sm">{item.itemDetails}</h3>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase ${
-                  item.status === 'Dispatched' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                }`}>
-                  {item.status}
-                </span>
               </div>
               
-              <div className="flex justify-between items-center text-xs text-slate-600 bg-slate-50 p-2 rounded mb-2">
+              <div className="flex justify-between items-center text-xs text-slate-600 bg-slate-50 p-2 rounded mb-2 gap-2">
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold">Conf. Qty</span>
-                  <span className="font-bold">{item.qty} {item.unit}</span>
+                  <span className="text-[9px] text-slate-400 uppercase font-bold">Ordered Qty</span>
+                  <span className="font-bold">{item.qty} <span className="text-[10px] font-bold text-slate-500 uppercase ml-0.5">{item.unit}</span></span>
                 </div>
                 {activeTab === 'Pending' && selectedIds.includes(item.id) && (
-                  <div className="flex-1 max-w-[100px]">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">Disp. Qty</span>
+                  <div className="flex-1 max-w-[80px]">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">Dispatch Qty</span>
                     <input 
                       type="number"
                       value={rowEdits[item.id]?.dispatchQty ?? item.qty}
                       onChange={(e) => { e.stopPropagation(); handleRowEdit(item.id, 'dispatchQty', e.target.value); }}
                       className="w-full px-2 py-1 border border-slate-200 rounded bg-white font-bold text-emerald-700"
                     />
+                  </div>
+                )}
+                {activeTab === 'Pending' && selectedIds.includes(item.id) && (
+                  <div className="flex flex-col text-right">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">Remaining</span>
+                    <span className={`font-bold ${Number(item.qty) - Number(rowEdits[item.id]?.dispatchQty ?? item.qty) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                      {Number(item.qty) - Number(rowEdits[item.id]?.dispatchQty ?? item.qty)}
+                    </span>
                   </div>
                 )}
                 {activeTab === 'Pending' && selectedIds.includes(item.id) && (
@@ -287,11 +290,14 @@ const DispatchPage = () => {
                   )}
                 </th>
                 <th className="px-4 py-3 w-16 text-center">SN</th>
-                <th className="px-4 py-3 w-48">Remark</th>
                 <th className="px-4 py-3">Item Details</th>
-                <th className="px-4 py-3 w-32 text-right">{activeTab === 'Pending' ? 'Disp. Qty' : 'Qty'}</th>
-                {activeTab === 'Pending' && <th className="px-4 py-3 w-32 text-right">Remaining</th>}
-                <th className="px-4 py-3 text-center w-24">Status</th>
+                <th className="px-4 py-3">Group</th>
+                <th className="px-4 py-3">Item Code</th>
+                <th className="px-4 py-3 w-48">Remark</th>
+                <th className="px-4 py-3 w-24 text-right">Ordered Qty</th>
+                <th className="px-4 py-3 w-32 text-right">{activeTab === 'Pending' ? 'Dispatch Qty' : 'Dispatched Qty'}</th>
+                {activeTab === 'Pending' && <th className="px-4 py-3 w-24 text-right">Remaining Qty</th>}
+                <th className="px-4 py-3 w-16 text-center">Unit</th>
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}
               </tr>
             </thead>
@@ -319,6 +325,10 @@ const DispatchPage = () => {
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-400 text-center">#{item.serialNo}</td>
                     
+                    <td className="px-4 py-3 font-bold text-slate-800">{item.itemDetails}</td>
+                    <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
+                    <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.itemCode}</td>
+                    
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
                         <input 
@@ -333,12 +343,8 @@ const DispatchPage = () => {
                       )}
                     </td>
 
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-slate-800">{item.itemDetails}</div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono uppercase">{item.itemCode}</span>
-                        <span className="text-[9px] text-slate-400 font-bold uppercase">{item.group}</span>
-                      </div>
+                    <td className="px-4 py-3 text-right font-bold text-slate-800">
+                      {item.qty}
                     </td>
 
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -359,7 +365,7 @@ const DispatchPage = () => {
                           </button>
                         </div>
                       ) : (
-                        <span className="font-bold text-slate-800">{item.qty} {item.unit}</span>
+                        <span className="font-bold text-slate-800">{activeTab === 'History' ? item.qty : '-'}</span>
                       )}
                     </td>
 
@@ -367,25 +373,20 @@ const DispatchPage = () => {
                       <td className="px-4 py-3 text-right">
                         {selectedIds.includes(item.id) ? (
                           <span className={`font-bold ${remaining > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                            {remaining} {item.unit}
+                            {remaining}
                           </span>
                         ) : (
-                          <span className="text-slate-300">-</span>
+                          <span className="text-slate-400 font-bold">{item.qty}</span>
                         )}
                       </td>
                     )}
-
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                        item.status === 'Dispatched' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                      }`}>
-                        {item.status}
-                      </span>
+                    <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">
+                      {item.unit}
                     </td>
 
                     {activeTab === 'History' && (
                       <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium">
-                        {new Date(item.dispatchedAt || item.uploadedAt).toLocaleString()}
+                        {new Date(item.dispatchedAt || item.uploadedAt).toLocaleDateString()}
                       </td>
                     )}
                   </tr>

@@ -13,7 +13,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { Package, CheckCircle, Truck, Clock } from 'lucide-react';
+import { Package, CheckCircle, Truck, Clock, ClipboardList } from 'lucide-react';
 
 const Dashboard = () => {
   const { items, setItems } = useDispatchStore();
@@ -61,8 +61,9 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
+          { label: 'Total Orders', value: stats.total, icon: ClipboardList, color: 'text-indigo-600', bg: 'bg-indigo-50' },
           { label: 'Pending Approval', value: stats.pendingApproval, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Confirmed', value: stats.confirmed, icon: Package, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -129,6 +130,61 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Orders Overview Table */}
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">Master Orders Overview</h3>
+        <div className="overflow-x-auto scrollbar-hide">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-y border-slate-200">
+              <tr>
+                <th className="px-4 py-3 w-16 text-center">SN</th>
+                <th className="px-4 py-3">Item Details</th>
+                <th className="px-4 py-3">Group</th>
+                <th className="px-4 py-3">Item Code</th>
+                <th className="px-4 py-3 w-24 text-right">Qty</th>
+                <th className="px-4 py-3 w-16 text-center">Unit</th>
+                <th className="px-4 py-3 text-center w-32">Status</th>
+                <th className="px-4 py-3 text-center w-32">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-[12px]">
+              {items.slice().reverse().map(item => (
+                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-4 py-3 font-medium text-slate-400 text-center">#{item.serialNo}</td>
+                  <td className="px-4 py-3 font-bold text-slate-800">{item.itemDetails}</td>
+                  <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
+                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.itemCode}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{item.qty}</td>
+                  <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider ${
+                      item.status === 'Dispatched' ? 'bg-blue-100 text-blue-700 shadow-sm' :
+                      item.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700 shadow-sm' :
+                      item.status === 'Approved' ? 'bg-purple-100 text-purple-700 shadow-sm' :
+                      item.status === 'Rejected' ? 'bg-red-100 text-red-700 shadow-sm' :
+                      'bg-amber-100 text-amber-700 shadow-sm'
+                    }`}>
+                      {item.status === 'Waiting for Approval' ? 'Pending' : item.status}
+                    </span>
+                    {item.remark?.includes('Remaining from') && (
+                      <div className="text-[9px] text-amber-600 mt-1 font-bold uppercase">Partial Remaining</div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium">
+                    {new Date(item.dispatchedAt || item.confirmedAt || item.approvedAt || item.uploadedAt).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan="8" className="py-12 text-center text-slate-400 text-sm">No orders found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

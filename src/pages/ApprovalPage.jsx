@@ -212,13 +212,6 @@ const ApprovalPage = () => {
                     <h3 className="font-bold text-slate-800 text-sm">{item.itemDetails}</h3>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase ${
-                  item.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
-                  item.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                  'bg-amber-100 text-amber-700'
-                }`}>
-                  {item.status}
-                </span>
               </div>
               
               {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
@@ -259,16 +252,6 @@ const ApprovalPage = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="col-span-2">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase">Remark</label>
-                    <input 
-                      type="text"
-                      placeholder="Add remark..."
-                      value={rowEdits[item.id]?.remark ?? item.remark ?? ''}
-                      onChange={(e) => handleRowEdit(item.id, 'remark', e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
                 </div>
               ) : activeTab === 'Pending' && (
                 <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg mt-1 border border-dashed border-slate-200">
@@ -288,7 +271,7 @@ const ApprovalPage = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-slate-400 uppercase font-bold">Original Qty</p>
-                  <p className="text-xs font-bold text-slate-800">{item.qty} {item.unit}</p>
+                  <p className="text-xs font-bold text-slate-800">{item.qty} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span></p>
                 </div>
               </div>
             </div>
@@ -315,10 +298,11 @@ const ApprovalPage = () => {
                 </th>
                 <th className="px-4 py-3 w-16 text-center">SN</th>
                 {activeTab === 'Pending' && <th className="px-4 py-3 w-40 text-center">Action</th>}
-                <th className="px-4 py-3 w-48">Remark</th>
                 <th className="px-4 py-3">Item Details</th>
+                <th className="px-4 py-3">Group</th>
+                <th className="px-4 py-3">Item Code</th>
                 <th className="px-4 py-3 w-24 text-right">Qty</th>
-                <th className="px-4 py-3 text-center w-24">Status</th>
+                <th className="px-4 py-3 w-16 text-center">Unit</th>
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}
               </tr>
             </thead>
@@ -373,27 +357,9 @@ const ApprovalPage = () => {
                     </td>
                   )}
 
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
-                      <input 
-                        type="text"
-                        placeholder="Remark..."
-                        value={rowEdits[item.id]?.remark ?? item.remark ?? ''}
-                        onChange={(e) => handleRowEdit(item.id, 'remark', e.target.value)}
-                        className="w-full px-3 py-1 border border-slate-200 rounded text-slate-600 placeholder:text-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    ) : (
-                      <span className="text-slate-500 italic truncate max-w-[150px] block">{item.remark || '-'}</span>
-                    )}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div className="font-bold text-slate-800">{item.itemDetails}</div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono uppercase">{item.itemCode}</span>
-                      <span className="text-[9px] text-slate-400 font-bold uppercase">{item.group}</span>
-                    </div>
-                  </td>
+                  <td className="px-4 py-3 font-bold text-slate-800">{item.itemDetails}</td>
+                  <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
+                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.itemCode}</td>
 
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
@@ -407,23 +373,16 @@ const ApprovalPage = () => {
                         <span className="text-[10px] text-slate-400 font-bold uppercase">{item.unit}</span>
                       </div>
                     ) : (
-                      <span className="font-bold text-slate-800">{item.qty} {item.unit}</span>
+                      <span className="font-bold text-slate-800">{item.qty}</span>
                     )}
                   </td>
-
-                  <td className="px-4 py-3 text-center">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                      item.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 shadow-sm' :
-                      item.status === 'Rejected' ? 'bg-red-100 text-red-700 shadow-sm' :
-                      'bg-amber-100 text-amber-700 shadow-sm'
-                    }`}>
-                      {item.status === 'Waiting for Approval' ? 'Pending' : item.status}
-                    </span>
+                  <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">
+                    {item.unit}
                   </td>
 
                   {activeTab === 'History' && (
                     <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium">
-                      {new Date(item.approvedAt || item.uploadedAt).toLocaleString()}
+                      {new Date(item.approvedAt || item.uploadedAt).toLocaleDateString()}
                     </td>
                   )}
                 </tr>
