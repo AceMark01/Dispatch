@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
-import { Check, X, Search, Filter, History, MousePointer2 } from 'lucide-react';
+import { Check, X, Search, Filter, History, MousePointer2, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Confirmation Module - Handles approval verification and status updates
@@ -12,19 +12,31 @@ const ConfirmPage = () => {
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
-  const pendingItems = items.filter(i => i.status === 'Approved');
-  const historyItems = items.filter(i => i.status === 'Confirmed' || i.status === 'Dispatched');
+  const pendingItems = items.filter(i => i.planned2 && !i.actual2);
+  const historyItems = items.filter(i => i.planned2 && i.actual2);
 
   const displayItems = activeTab === 'Pending' ? pendingItems : historyItems;
-  
+
   const filteredItems = displayItems.filter(i => {
-    const matchesSearch = i.itemDetails.toLowerCase().includes(search.toLowerCase()) ||
-                         i.itemCode.toLowerCase().includes(search.toLowerCase()) ||
-                         i.serialNo?.toString().includes(search);
+    const matchesSearch = (i.itemName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (i.item || '').toLowerCase().includes(search.toLowerCase()) ||
+      i.serialNo?.toString().includes(search);
     const matchesGroup = filterGroup === 'All' || i.group === filterGroup;
     return matchesSearch && matchesGroup;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to page 1 when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterGroup, activeTab]);
 
   const groups = ['All', ...new Set(items.map(item => item.group))];
 
@@ -37,9 +49,9 @@ const ConfirmPage = () => {
 
   const handleAction = (id, confirmStatus) => {
     if (!confirmStatus) return;
-    updateItemStatus(id, 'Confirmed', { 
-      confirmStatus, 
-      confirmedAt: new Date().toISOString() 
+    updateItemStatus(id, 'Confirmed', {
+      confirmStatus,
+      confirmedAt: new Date().toISOString()
     });
     setRowEdits(prev => {
       const newEdits = { ...prev };
@@ -54,9 +66,9 @@ const ConfirmPage = () => {
     selectedIds.forEach(id => {
       const edit = rowEdits[id] || {};
       const confirmStatus = edit.confirmStatus || 'Yes';
-      updateItemStatus(id, 'Confirmed', { 
-        confirmStatus, 
-        confirmedAt: new Date().toISOString() 
+      updateItemStatus(id, 'Confirmed', {
+        confirmStatus,
+        confirmedAt: new Date().toISOString()
       });
     });
     setRowEdits({});
@@ -65,16 +77,25 @@ const ConfirmPage = () => {
   };
 
   const toggleSelect = (id) => {
-    setSelectedIds(prev => 
+    setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === filteredItems.length) {
+    if (selectedIds.length === paginatedItems.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredItems.map(i => i.id));
+      setSelectedIds(paginatedItems.map(i => i.id));
+    }
+  };
+
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    // Scroll to top of table
+    const tableContainer = document.querySelector('.table-container');
+    if (tableContainer) {
+      tableContainer.scrollTop = 0;
     }
   };
 
@@ -83,13 +104,13 @@ const ConfirmPage = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-slate-800">Confirm Orders</h1>
         <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
-          <button 
+          <button
             onClick={() => { setActiveTab('Pending'); setSelectedIds([]); }}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Pending' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
           >
             Pending ({pendingItems.length})
           </button>
-          <button 
+          <button
             onClick={() => { setActiveTab('History'); setSelectedIds([]); }}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'History' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
           >
@@ -103,7 +124,7 @@ const ConfirmPage = () => {
         <div className="flex gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
+            <input
               type="text"
               placeholder="Search approved items..."
               value={search}
@@ -111,13 +132,12 @@ const ConfirmPage = () => {
               className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all shadow-sm"
             />
           </div>
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 border rounded-xl flex items-center gap-2 transition-all shadow-sm ${
-              showFilters || filterGroup !== 'All'
+            className={`px-4 py-2 border rounded-xl flex items-center gap-2 transition-all shadow-sm ${showFilters || filterGroup !== 'All'
                 ? 'bg-purple-50 border-purple-200 text-purple-600'
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <Filter size={18} /> Filter
           </button>
@@ -128,7 +148,7 @@ const ConfirmPage = () => {
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase px-1">Group</label>
-              <select 
+              <select
                 value={filterGroup}
                 onChange={(e) => setFilterGroup(e.target.value)}
                 className="block w-40 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-purple-500 outline-none shadow-sm"
@@ -137,7 +157,7 @@ const ConfirmPage = () => {
               </select>
             </div>
             <div className="flex items-end pb-0.5">
-              <button 
+              <button
                 onClick={() => {
                   setFilterGroup('All');
                   setSearch('');
@@ -155,7 +175,7 @@ const ConfirmPage = () => {
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-purple-700">{selectedIds.length} items selected</span>
               <div className="h-4 w-px bg-purple-200" />
-              <button 
+              <button
                 onClick={() => setSelectedIds([])}
                 className="text-xs font-semibold text-purple-600 hover:underline"
               >
@@ -163,7 +183,7 @@ const ConfirmPage = () => {
               </button>
             </div>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={handleBulkSubmit}
                 className="px-6 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-purple-700 transition-colors uppercase tracking-wider"
               >
@@ -178,25 +198,25 @@ const ConfirmPage = () => {
       <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         {/* Mobile View: Cards */}
         <div className="md:hidden flex flex-col gap-3 p-3 overflow-y-auto flex-1 bg-slate-50/50">
-          {filteredItems.map((item) => (
-            <div 
-              key={item.id} 
+          {paginatedItems.map((item) => (
+            <div
+              key={item.id}
               className={`bg-white p-3 rounded-lg border transition-all ${selectedIds.includes(item.id) ? 'border-purple-500 ring-1 ring-purple-500' : 'border-slate-200 shadow-sm'}`}
               onClick={() => activeTab === 'Pending' && toggleSelect(item.id)}
             >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-2">
                   {activeTab === 'Pending' && (
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={selectedIds.includes(item.id)}
                       readOnly
                       className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
                     />
                   )}
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.itemCode}</span>
-                    <h3 className="font-bold text-slate-800 text-sm">{item.itemDetails}</h3>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.item}</span>
+                    <h3 className="font-bold text-slate-800 text-sm">{item.itemName}</h3>
                   </div>
                 </div>
               </div>
@@ -204,25 +224,23 @@ const ConfirmPage = () => {
                 <div className="flex-1">Qty: <span className="font-bold">{item.qty}</span> <span className="text-[10px] text-slate-400 font-bold uppercase ml-0.5">{item.unit}</span></div>
                 {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
                   <div className="flex gap-1 flex-1 animate-in slide-in-from-right-2">
-                    <select 
+                    <select
                       value={rowEdits[item.id]?.confirmStatus ?? 'Yes'}
                       onChange={(e) => { e.stopPropagation(); handleRowEdit(item.id, 'confirmStatus', e.target.value); }}
-                      className={`flex-1 px-2 py-1 text-[10px] border rounded font-bold transition-all ${
-                        (rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
+                      className={`flex-1 px-2 py-1 text-[10px] border rounded font-bold transition-all ${(rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                           : 'bg-red-50 border-red-200 text-red-700'
-                      }`}
+                        }`}
                     >
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
                     </select>
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); handleAction(item.id, rowEdits[item.id]?.confirmStatus ?? 'Yes'); }}
-                      className={`p-1 text-white rounded transition-all ${
-                        (rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
+                      className={`p-1 text-white rounded transition-all ${(rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
                           ? 'bg-emerald-600'
                           : 'bg-red-600'
-                      }`}
+                        }`}
                     >
                       <Check size={12} />
                     </button>
@@ -243,21 +261,21 @@ const ConfirmPage = () => {
               </div>
             </div>
           ))}
-          {filteredItems.length === 0 && (
+          {paginatedItems.length === 0 && (
             <div className="py-12 text-center text-slate-400 text-sm">No items found</div>
           )}
         </div>
 
         {/* Desktop View: Table */}
-        <div className="hidden md:block flex-1 overflow-y-auto scrollbar-hide">
+        <div className="hidden md:block flex-1 overflow-y-auto scrollbar-hide table-container">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead className="sticky top-0 bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider z-20 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 w-10 text-center">
-                  {activeTab === 'Pending' && (
-                    <input 
-                      type="checkbox" 
-                      checked={selectedIds.length === filteredItems.length && filteredItems.length > 0}
+                  {activeTab === 'Pending' && paginatedItems.length > 0 && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === paginatedItems.length && paginatedItems.length > 0}
                       onChange={toggleSelectAll}
                       className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
                     />
@@ -265,21 +283,21 @@ const ConfirmPage = () => {
                 </th>
                 <th className="px-4 py-3 w-16">SN</th>
                 {activeTab === 'Pending' && <th className="px-4 py-3 w-32 text-center">Action</th>}
-                <th className="px-4 py-3">Item Details</th>
+                <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
-                <th className="px-4 py-3">Item Code</th>
+                <th className="px-4 py-3">Item</th>
                 <th className="px-4 py-3 w-24 text-right">Qty</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-[12px]">
-              {filteredItems.map((item) => (
+              {paginatedItems.map((item) => (
                 <tr key={item.id} className={`${selectedIds.includes(item.id) ? 'bg-purple-50/30' : 'hover:bg-slate-50/50'} transition-colors cursor-pointer`} onClick={() => activeTab === 'Pending' && toggleSelect(item.id)}>
                   <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                     {activeTab === 'Pending' && (
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={selectedIds.includes(item.id)}
                         onChange={() => toggleSelect(item.id)}
                         className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
@@ -288,30 +306,28 @@ const ConfirmPage = () => {
                     {activeTab === 'History' && <div className="w-4" />}
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-400">#{item.serialNo}</td>
-                  
+
                   {activeTab === 'Pending' && (
                     <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       {selectedIds.includes(item.id) ? (
                         <div className="flex items-center gap-1">
-                          <select 
+                          <select
                             value={rowEdits[item.id]?.confirmStatus ?? 'Yes'}
                             onChange={(e) => handleRowEdit(item.id, 'confirmStatus', e.target.value)}
-                            className={`flex-1 px-2 py-1.5 border rounded-lg font-bold shadow-sm focus:ring-2 outline-none transition-all cursor-pointer ${
-                              (rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
+                            className={`flex-1 px-2 py-1.5 border rounded-lg font-bold shadow-sm focus:ring-2 outline-none transition-all cursor-pointer ${(rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 focus:ring-emerald-500'
                                 : 'bg-red-50 border-red-200 text-red-700 focus:ring-red-500'
-                            }`}
+                              }`}
                           >
                             <option value="Yes" className="bg-white text-emerald-700 font-bold">Yes</option>
                             <option value="No" className="bg-white text-red-700 font-bold">No</option>
                           </select>
-                          <button 
+                          <button
                             onClick={() => handleAction(item.id, rowEdits[item.id]?.confirmStatus ?? 'Yes')}
-                            className={`p-1.5 text-white rounded-lg transition-all shadow-sm ${
-                              (rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
+                            className={`p-1.5 text-white rounded-lg transition-all shadow-sm ${(rowEdits[item.id]?.confirmStatus ?? 'Yes') === 'Yes'
                                 ? 'bg-emerald-600 hover:bg-emerald-700'
                                 : 'bg-red-600 hover:bg-red-700'
-                            }`}
+                              }`}
                           >
                             <Check size={14} />
                           </button>
@@ -322,9 +338,9 @@ const ConfirmPage = () => {
                     </td>
                   )}
 
-                  <td className="px-4 py-3 font-bold text-slate-800">{item.itemDetails}</td>
+                  <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
-                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.itemCode}</td>
+                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
 
                   <td className="px-4 py-3 text-right font-bold text-slate-800">
                     {item.qty}
@@ -342,10 +358,72 @@ const ConfirmPage = () => {
               ))}
             </tbody>
           </table>
-          {filteredItems.length === 0 && (
+          {paginatedItems.length === 0 && (
             <div className="py-12 text-center text-slate-400 text-sm">No items found</div>
           )}
         </div>
+
+        {/* Pagination Component */}
+        {filteredItems.length > itemsPerPage && (
+          <div className="border-t border-slate-200 bg-white px-4 py-3 flex items-center justify-between flex-wrap gap-3">
+            <div className="text-xs text-slate-500">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredItems.length)} of {filteredItems.length} items
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${currentPage === 1
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+              >
+                <ChevronLeft size={14} /> Previous
+              </button>
+
+              <div className="flex gap-1">
+                {(() => {
+                  const pages = [];
+                  const maxVisible = 5;
+                  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+                  if (endPage - startPage + 1 < maxVisible) {
+                    startPage = Math.max(1, endPage - maxVisible + 1);
+                  }
+
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(i);
+                  }
+
+                  return pages.map(page => (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      className={`w-8 h-8 rounded-lg text-xs font-medium transition-all ${currentPage === page
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ));
+                })()}
+              </div>
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${currentPage === totalPages
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+              >
+                Next <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

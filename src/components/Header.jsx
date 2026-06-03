@@ -1,7 +1,10 @@
 import React from 'react';
-import { Bell, Search, User, Menu } from 'lucide-react';
+import { Bell, Search, User, Menu, RefreshCw } from 'lucide-react';
+import { useDispatchStore } from '../store/dispatchStore';
 
 const Header = ({ onMenuClick, user }) => {
+  const { fetchFromSheet, isLoading } = useDispatchStore();
+
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-sky-200">
       <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
@@ -19,7 +22,16 @@ const Header = ({ onMenuClick, user }) => {
         {/* Right Section: Actions & Profile */}
         <div className="flex items-center gap-2 sm:gap-4">
 
-
+          {/* Sync Button */}
+          <button
+            onClick={fetchFromSheet}
+            disabled={isLoading}
+            className={`px-3 py-1.5 border border-sky-200 rounded-lg text-sky-700 bg-sky-50/50 hover:bg-sky-100 hover:text-sky-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm ${isLoading ? 'animate-pulse' : ''}`}
+            title="Sync with Google Sheets"
+          >
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            <span>{isLoading ? 'Syncing...' : 'Sync Sheet'}</span>
+          </button>
 
           <div className="h-8 w-px bg-sky-200 mx-1 hidden sm:block"></div>
 

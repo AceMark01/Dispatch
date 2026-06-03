@@ -12,7 +12,8 @@ const EMPTY_FORM = {
   designation: '', 
   userId: '', 
   pass: '', 
-  role: 'User' 
+  role: 'User',
+  pageAccess: []
 };
 
 export default function Setting() {
@@ -30,43 +31,38 @@ export default function Setting() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
-  // Initialize with dummy data
+  // Fetch users from Google Sheet (Login sheet)
   useEffect(() => {
-    const dummyUsers = [
-      { 
-        _rowIndex: 2,
-        timestamp: '2026/05/07 10:00:00',
-        serialNo: 'SN-001',
-        name: 'ACE-MARK ADMIN',
-        contactNo: '9876543210',
-        gmail: 'admin@acemark.com',
-        designation: 'SYSTEM MANAGER',
-        userId: 'admin',
-        pass: 'admin123',
-        role: 'Admin'
-      },
-      { 
-        _rowIndex: 3,
-        timestamp: '2026/05/07 10:05:00',
-        serialNo: 'SN-002',
-        name: 'BHATIYA STAFF',
-        contactNo: '9876543211',
-        gmail: 'staff@bhatiya.com',
-        designation: 'OPERATIONS EXECUTIVE',
-        userId: 'user',
-        pass: 'user123',
-        role: 'User'
+    const loadUsers = async () => {
+      setIsLoading(true);
+      try {
+        const { fetchSheetData } = await import('../utils/api');
+        const rows = await fetchSheetData(LOGIN_SHEET);
+        // Sheet columns (0-indexed): 0=Timestamp, 1=Serial No., 2=Full Name,
+        // 3=Contact No., 4=Email, 5=Designation, 6=User ID, 7=Password, 8=Role, 9=Page Access
+        const dataRows = rows.slice(1); // skip header row
+        const mapped = dataRows.map((row, idx) => ({
+          _rowIndex: idx + 2, // row 1 is header
+          timestamp:   row[0]  || '',
+          serialNo:    row[1]  || '',
+          name:        row[2]  || '',
+          contactNo:   row[3]  || '',
+          gmail:       row[4]  || '',
+          designation: row[5]  || '',
+          userId:      row[6]  || '',
+          pass:        row[7]  || '',
+          role:        row[8]  || 'User',
+          pageAccess:  row[9]  || '',
+        })).filter(row => row.userId || row.name); // skip empty rows
+        setUsers(mapped);
+      } catch (err) {
+        console.error('Failed to load users from sheet:', err);
+        toast.error('Failed to load users from Google Sheet');
+      } finally {
+        setIsLoading(false);
       }
-    ];
-    
-    // Load from localStorage if exists, otherwise use dummy
-    const savedUsers = localStorage.getItem('dispatch-users');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    } else {
-      setUsers(dummyUsers);
-      localStorage.setItem('dispatch-users', JSON.stringify(dummyUsers));
-    }
+    };
+    loadUsers();
   }, []);
 
   const openAdd = () => { 
@@ -84,7 +80,8 @@ export default function Setting() {
       designation: u.designation, 
       userId:      u.userId, 
       pass:        u.pass, 
-      role:        u.role 
+      role:        u.role,
+      pageAccess:  u.pageAccess ? u.pageAccess.split(', ') : []
     });
     setShowFormModal(true);
   };
@@ -95,38 +92,79 @@ export default function Setting() {
     setFormData(EMPTY_FORM); 
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     
-    setTimeout(() => {
+    try {
       const now = new Date();
       const p = n => n.toString().padStart(2, '0');
       const ts = `${now.getFullYear()}/${p(now.getMonth()+1)}/${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+
+      const { insertRow, updateRow } = await import('../utils/api');
 
       let updatedUsers;
       if (editUser) {
         updatedUsers = users.map(u => 
           u.serialNo === editUser.serialNo ? { ...u, ...formData } : u
         );
+        
+        // Google Sheet columns: Timestamp, Serial No., Full Name, Contact No., Email, Designation, User ID, Password, Role, Page access
+        const rowData = [
+          editUser.timestamp, // Keep original timestamp
+          editUser.serialNo,
+          formData.name,
+          formData.contactNo,
+          formData.gmail,
+          formData.designation,
+          formData.userId,
+          formData.pass,
+          formData.role,
+          formData.pageAccess.join(', ')
+        ];
+        
+        // Note: Assuming _rowIndex is correctly stored (usually starts at 2 for data under headers)
+        if (editUser._rowIndex) {
+          await updateRow(editUser._rowIndex, rowData, LOGIN_SHEET);
+        }
+        
         toast.success('User updated successfully!');
       } else {
         const sn = `SN-${String(users.length + 1).padStart(3, '0')}`;
         const newUser = {
           ...formData,
+          pageAccess: formData.pageAccess.join(', '),
           serialNo: sn,
           timestamp: ts,
           _rowIndex: users.length + 2
         };
         updatedUsers = [...users, newUser];
+        
+        const rowData = [
+          ts,
+          sn,
+          formData.name,
+          formData.contactNo,
+          formData.gmail,
+          formData.designation,
+          formData.userId,
+          formData.pass,
+          formData.role,
+          formData.pageAccess.join(', ')
+        ];
+        
+        await insertRow(rowData, LOGIN_SHEET);
         toast.success('User added successfully!');
       }
 
       setUsers(updatedUsers);
-      localStorage.setItem('dispatch-users', JSON.stringify(updatedUsers));
-      setIsSaving(false);
       closeForm();
-    }, 500);
+    } catch (error) {
+      console.error("Error saving user:", error);
+      toast.error('Failed to save to Google Sheet');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = (u) => {
@@ -134,7 +172,6 @@ export default function Setting() {
     
     const updatedUsers = users.filter(user => user.serialNo !== u.serialNo);
     setUsers(updatedUsers);
-    localStorage.setItem('dispatch-users', JSON.stringify(updatedUsers));
     toast.success('User deleted successfully!');
   };
 
@@ -228,8 +265,8 @@ export default function Setting() {
                       <p className="text-[11px] font-medium text-slate-700">{u.contactNo}</p>
                     </div>
                     <div>
-                      <p className="text-[8px] text-slate-400 uppercase tracking-wider mb-0.5">Emp Code</p>
-                      <p className="text-[11px] font-medium text-slate-700">{u.employeeCode}</p>
+                      <p className="text-[8px] text-slate-400 uppercase tracking-wider mb-0.5">Page Access</p>
+                      <p className="text-[10px] font-medium text-slate-700 whitespace-normal break-words">{u.pageAccess || 'None'}</p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-[8px] text-slate-400 uppercase tracking-wider mb-0.5">Gmail</p>
@@ -267,11 +304,11 @@ export default function Setting() {
                     <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Name</th>
                     <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Contact No</th>
                     <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Gmail</th>
-                    <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Emp Code</th>
                     <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Designation</th>
                     <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">ID</th>
                     <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Pass</th>
                     <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Role</th>
+                    <th className="px-4 py-3 text-left text-[12px] font-bold text-slate-700 uppercase whitespace-nowrap">Page Access</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -292,7 +329,6 @@ export default function Setting() {
                       <td className="px-4 py-3 text-sm text-slate-700 uppercase whitespace-nowrap font-semibold">{u.name}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.contactNo}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.gmail}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{u.employeeCode}</td>
                       <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap uppercase">{u.designation}</td>
                       <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">{u.userId}</td>
                       <td className="px-4 py-3 text-[11px] font-mono text-slate-500 whitespace-nowrap">
@@ -306,6 +342,7 @@ export default function Setting() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`px-2 py-0.5 rounded text-[10px] tracking-widest uppercase border ${u.role === 'Admin' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>{u.role}</span>
                       </td>
+                      <td className="px-4 py-3 text-[10px] text-slate-500 max-w-[200px] whitespace-normal break-words">{u.pageAccess || 'None'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -452,20 +489,45 @@ export default function Setting() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1 sm:space-y-1.5">
+                    <label className="text-xs sm:text-sm text-slate-600">User Role</label>
+                    {editUser ? (
+                      <input readOnly value={formData.role} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-slate-500 cursor-not-allowed font-medium" />
+                    ) : (
+                      <select 
+                        value={formData.role} 
+                        onChange={e => setFormData({ ...formData, role: e.target.value })} 
+                        className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                      >
+                        <option value="User">User</option>
+                        <option value="Admin">Admin</option>
+                      </select>
+                    )}
+                  </div>
+                </div>
+
                 <div className="space-y-1 sm:space-y-1.5">
-                  <label className="text-xs sm:text-sm text-slate-600">User Role</label>
-                  {editUser ? (
-                    <input readOnly value={formData.role} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-slate-500 cursor-not-allowed font-medium" />
-                  ) : (
-                    <select 
-                      value={formData.role} 
-                      onChange={e => setFormData({ ...formData, role: e.target.value })} 
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
-                    >
-                      <option value="User">User</option>
-                      <option value="Admin">Admin</option>
-                    </select>
-                  )}
+                  <label className="text-xs sm:text-sm text-slate-600">Page Access</label>
+                  <div className="grid grid-cols-2 gap-2 mt-1 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    {['Dashboard', 'Upload', 'Approval', 'Confirm', 'Dispatch', 'Setting'].map(page => (
+                      <label key={page} className="flex items-center gap-2 text-xs sm:text-sm text-slate-700 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.pageAccess.includes(page)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, pageAccess: [...formData.pageAccess, page] });
+                            } else {
+                              setFormData({ ...formData, pageAccess: formData.pageAccess.filter(p => p !== page) });
+                            }
+                          }}
+                          className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 sm:w-4 sm:h-4"
+                        />
+                        {page}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </form>
             </div>

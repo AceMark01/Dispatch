@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Footer from './Footer';
 import { useAuthStore } from '../store/authStore';
+import { useDispatchStore } from '../store/dispatchStore';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAuthStore();
+  const { fetchFromSheet } = useDispatchStore();
+
+  useEffect(() => {
+    fetchFromSheet();
+  }, [fetchFromSheet]);
 
   return (
     <div className="flex h-[100dvh] bg-white overflow-hidden">

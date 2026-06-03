@@ -25,24 +25,25 @@ const Login = () => {
         return;
       }
 
-      const dummyUsers = [
-        { 
-          id: 'admin', 
-          pass: 'admin123', 
-          name: 'Ace-Mark Admin', 
-          role: 'ADMIN',
-          designation: 'System Manager'
-        },
-        { 
-          id: 'user', 
-          pass: 'user123', 
-          name: 'Bhatiya Staff', 
-          role: 'USER',
-          designation: 'Operations Executive'
-        }
-      ];
+      const { fetchSheetData } = await import('../utils/api');
+      
+      // Fetch users from the 'Login' sheet
+      const data = await fetchSheetData('Login');
+      
+      // Map sheet data (assuming row 0 is headers)
+      // Index mapping based on your sheet: 
+      // 0: Timestamp, 1: Serial No, 2: Full Name, 3: Contact No, 4: Email, 
+      // 5: Designation, 6: User ID, 7: Password, 8: Role, 9: Page access
+      const users = data.slice(1).map(row => ({
+        id: row[6],
+        pass: row[7],
+        name: row[2],
+        designation: row[5],
+        role: row[8] ? row[8].toUpperCase() : 'USER',
+        pageAccess: row[9] || ''
+      }));
 
-      const matchedUser = dummyUsers.find(u => u.id === id && u.pass === password);
+      const matchedUser = users.find(u => u.id === id && u.pass === password);
 
       if (!matchedUser) {
         toast.error('Invalid credentials');
@@ -55,12 +56,13 @@ const Login = () => {
         name: matchedUser.name,
         username: matchedUser.id,
         role: matchedUser.role,
-        designation: matchedUser.designation
+        designation: matchedUser.designation,
+        pageAccess: matchedUser.pageAccess
       });
       navigate("/", { replace: true });
     } catch (err) {
       console.error(err);
-      toast.error('Login error');
+      toast.error('Login error or network issue');
     } finally {
       setSubmitting(false);
     }

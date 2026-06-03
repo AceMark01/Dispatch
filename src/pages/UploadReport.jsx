@@ -14,14 +14,40 @@ const UploadReport = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Parse any serial format to a number
+  const parseSerial = (val) => {
+    if (!val) return 0;
+    const match = val.toString().trim().match(/(\d+)$/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  // Format a serial number as SN-001
+  const formatSerialNo = (val) => {
+    const n = parseSerial(val);
+    if (!n) return val || '';
+    return `SN-${n.toString().padStart(3, '0')}`;
+  };
+
+  // Compute next serial number: max across sheet items + preview batch + 1
+  const getNextSerialNo = (currentPreview = previewData) => {
+    const allSerials = [
+      ...items.map(i => parseSerial(i.serialNo)),
+      ...currentPreview.map(i => parseSerial(i.serialNo)),
+    ];
+    const maxSerial = allSerials.length > 0 ? Math.max(...allSerials) : 0;
+    const next = maxSerial + 1;
+    return `SN-${next.toString().padStart(3, '0')}`;
+  };
+
   const [manualItem, setManualItem] = useState({
-    serialNo: '', itemDetails: '', group: '', itemCode: '', qty: '', unit: 'PCS', remark: ''
+    serialNo: '', itemName: '', group: '', item: '', roiQty: '', shelf1: '', qty: '', unit: 'PCS', remark: ''
   });
 
   const filteredItems = items.filter(i => {
-    const matchesSearch = i.itemDetails.toLowerCase().includes(search.toLowerCase()) ||
-                         i.itemCode.toLowerCase().includes(search.toLowerCase()) ||
-                         i.serialNo?.toString().includes(search);
+    const matchesSearch = i.itemName?.toLowerCase().includes(search.toLowerCase()) ||
+      i.item?.toLowerCase().includes(search.toLowerCase()) ||
+      i.serialNo?.toString().includes(search);
     const matchesGroup = filterGroup === 'All' || i.group === filterGroup;
     return matchesSearch && matchesGroup;
   });
@@ -41,16 +67,45 @@ const UploadReport = () => {
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
 
+        let currentMaxSerial = 0;
+        const allSerials = [
+          ...items.map(i => parseSerial(i.serialNo)),
+          ...previewData.map(i => parseSerial(i.serialNo))
+        ];
+        if (allSerials.length > 0) {
+           currentMaxSerial = Math.max(...allSerials);
+        }
+
         // Map excel columns to our format
-        const mappedData = data.map((row, idx) => ({
-          serialNo: row['Serial No'] || row['S.No'] || idx + 1,
-          itemDetails: row['Item Details'] || row['Item Name'] || 'N/A',
-          group: row['Group'] || 'N/A',
-          itemCode: row['Item Code'] || 'N/A',
-          qty: row['Qty'] || row['Quantity'] || 0,
-          unit: row['Unit'] || 'PCS',
-          remark: row['Remark'] || '',
-        }));
+        const mappedData = data.map((row) => {
+          let snRaw = row['Serial No'] || row['S.No'];
+          let sn;
+
+          if (!snRaw) {
+            currentMaxSerial++;
+            sn = `SN-${currentMaxSerial.toString().padStart(3, '0')}`;
+          } else {
+            const parsed = parseSerial(snRaw);
+            if (parsed > 0) {
+              if (parsed > currentMaxSerial) currentMaxSerial = parsed;
+              sn = `SN-${parsed.toString().padStart(3, '0')}`;
+            } else {
+              sn = String(snRaw);
+            }
+          }
+
+          return {
+            serialNo: sn,
+            itemName: row['Item Name'] || row['Item Details'] || 'N/A',
+            group: row['Group'] || 'N/A',
+            item: row['Item'] || row['Item Code'] || 'N/A',
+            roiQty: row['ROI Qty'] || '',
+            shelf1: row['Shelf 1'] || '',
+            qty: row['Qty'] || row['Quantity'] || 0,
+            unit: row['Unit'] || 'PCS',
+            remark: row['Remark'] || '',
+          };
+        });
 
         setPreviewData(prev => [...prev, ...mappedData]);
         toast.success(`Parsed ${mappedData.length} rows successfully`);
@@ -78,9 +133,11 @@ const UploadReport = () => {
   const downloadTemplate = () => {
     const templateData = [{
       'Serial No': '1',
-      'Item Details': 'Sample Item',
+      'Item Name': 'Sample Item',
       'Group': 'Sample Group',
-      'Item Code': 'CODE-123',
+      'Item': 'Item Code/Name',
+      'ROI Qty': '10',
+      'Shelf 1': 'A1',
       'Qty': '100',
       'Unit': 'PCS'
     }];
@@ -91,21 +148,36 @@ const UploadReport = () => {
   };
 
   const handleAddManualItem = () => {
-    if (!manualItem.itemDetails || !manualItem.qty) {
-      toast.error("Item Details and Qty are required");
+    if (!manualItem.itemName || !manualItem.qty) {
+      toast.error("Item Name and Qty are required");
       return;
     }
-    setPreviewData([...previewData, { 
-      ...manualItem, 
-      serialNo: manualItem.serialNo || (previewData.length + 1).toString() 
-    }]);
+    const newPreview = [...previewData, {
+      ...manualItem,
+      serialNo: manualItem.serialNo || getNextSerialNo()
+    }];
+    setPreviewData(newPreview);
+    // Reset form but pre-fill next serial no based on updated preview
     setManualItem({
-      serialNo: '', itemDetails: '', group: '', itemCode: '', qty: '', unit: 'PCS', remark: ''
+      serialNo: getNextSerialNo(newPreview), itemName: '', group: '', item: '', roiQty: '', shelf1: '', qty: '', unit: 'PCS', remark: ''
     });
   };
 
   const removePreviewItem = (indexToRemove) => {
     setPreviewData(previewData.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const p = n => n.toString().padStart(2, '0');
+    const date = `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear().toString().slice(-2)}`;
+    let hours = d.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const time = `${p(hours)}:${p(d.getMinutes())} ${ampm}`;
+    return `${date} ${time}`;
   };
 
   return (
@@ -118,8 +190,12 @@ const UploadReport = () => {
       </div>
 
       {/* Big Noticeable Import Box */}
-      <div 
-        onClick={() => setShowImportModal(true)}
+      <div
+        onClick={() => {
+          setShowImportModal(true);
+          // Pre-fill serial no when modal opens
+          setManualItem(prev => ({ ...prev, serialNo: getNextSerialNo() }));
+        }}
         className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer shadow-lg hover:shadow-xl transition-all border border-blue-500/50 group"
       >
         <div className="p-4 bg-white/20 rounded-full mb-4 group-hover:scale-110 transition-transform shadow-inner">
@@ -145,7 +221,7 @@ const UploadReport = () => {
             </div>
 
             <div className="p-4 overflow-y-auto flex-1 space-y-6">
-              
+
               {/* Option 1: File Upload */}
               <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -161,14 +237,14 @@ const UploadReport = () => {
                   >
                     <Download size={14} /> Download Template
                   </button>
-                  <input 
-                    type="file" 
-                    accept=".xlsx, .xls, .csv" 
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls, .csv"
                     onChange={handleFileUpload}
-                    className="hidden" 
+                    className="hidden"
                     id="excel-upload"
                   />
-                  <label 
+                  <label
                     htmlFor="excel-upload"
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-sm transition-all uppercase tracking-wider flex items-center gap-2"
                   >
@@ -185,29 +261,43 @@ const UploadReport = () => {
                 <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-end gap-2 overflow-x-auto">
                   <div className="space-y-1.5 min-w-[80px]">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Serial No</label>
-                    <input type="text" value={manualItem.serialNo} onChange={e => setManualItem({...manualItem, serialNo: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Auto" />
+                    <input
+                      type="text"
+                      value={manualItem.serialNo}
+                      readOnly
+                      className="w-full px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-700 outline-none cursor-default"
+                      title="Auto-generated serial number"
+                    />
                   </div>
                   <div className="space-y-1.5 min-w-[150px] flex-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Item Details*</label>
-                    <input type="text" value={manualItem.itemDetails} onChange={e => setManualItem({...manualItem, itemDetails: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Item name" />
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Item Name*</label>
+                    <input type="text" value={manualItem.itemName} onChange={e => setManualItem({ ...manualItem, itemName: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Item name" />
                   </div>
                   <div className="space-y-1.5 min-w-[120px]">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Group</label>
-                    <input type="text" value={manualItem.group} onChange={e => setManualItem({...manualItem, group: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="e.g. ELECTRONICS" />
+                    <input type="text" value={manualItem.group} onChange={e => setManualItem({ ...manualItem, group: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="e.g. ELECTRONICS" />
                   </div>
                   <div className="space-y-1.5 min-w-[100px]">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Item Code</label>
-                    <input type="text" value={manualItem.itemCode} onChange={e => setManualItem({...manualItem, itemCode: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Code" />
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Item</label>
+                    <input type="text" value={manualItem.item} onChange={e => setManualItem({ ...manualItem, item: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Item Code" />
+                  </div>
+                  <div className="space-y-1.5 min-w-[80px]">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ROI Qty</label>
+                    <input type="number" value={manualItem.roiQty} onChange={e => setManualItem({ ...manualItem, roiQty: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5 min-w-[80px]">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Shelf 1</label>
+                    <input type="text" value={manualItem.shelf1} onChange={e => setManualItem({ ...manualItem, shelf1: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Shelf" />
                   </div>
                   <div className="space-y-1.5 min-w-[80px]">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Qty*</label>
-                    <input type="number" value={manualItem.qty} onChange={e => setManualItem({...manualItem, qty: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="0" />
+                    <input type="number" value={manualItem.qty} onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="0" />
                   </div>
                   <div className="space-y-1.5 min-w-[80px]">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Unit</label>
-                    <input type="text" value={manualItem.unit} onChange={e => setManualItem({...manualItem, unit: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="PCS" />
+                    <input type="text" value={manualItem.unit} onChange={e => setManualItem({ ...manualItem, unit: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="PCS" />
                   </div>
-                  <button 
+                  <button
                     onClick={handleAddManualItem}
                     className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 shadow-sm transition-all flex items-center gap-1 h-[34px]"
                   >
@@ -223,7 +313,7 @@ const UploadReport = () => {
                     Preview List ({previewData.length} items)
                   </h3>
                   {previewData.length > 0 && (
-                    <button 
+                    <button
                       onClick={() => setPreviewData([])}
                       className="px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-1 transition-colors"
                     >
@@ -237,9 +327,11 @@ const UploadReport = () => {
                     <thead className="sticky top-0 bg-slate-100 text-slate-600 uppercase text-[10px] font-bold tracking-wider z-10">
                       <tr>
                         <th className="px-4 py-2.5 w-16 text-center">SN</th>
-                        <th className="px-4 py-2.5">Item Details</th>
+                        <th className="px-4 py-2.5">Item Name</th>
                         <th className="px-4 py-2.5">Group</th>
-                        <th className="px-4 py-2.5">Item Code</th>
+                        <th className="px-4 py-2.5">Item</th>
+                        <th className="px-4 py-2.5 text-right">ROI Qty</th>
+                        <th className="px-4 py-2.5">Shelf 1</th>
                         <th className="px-4 py-2.5 text-right">Qty</th>
                         <th className="px-4 py-2.5 text-center">Unit</th>
                         <th className="px-4 py-2.5 text-center">Action</th>
@@ -248,14 +340,16 @@ const UploadReport = () => {
                     <tbody className="divide-y divide-slate-100 text-slate-700">
                       {previewData.map((row, i) => (
                         <tr key={i} className="hover:bg-blue-50/30 transition-colors text-[12px]">
-                          <td className="px-4 py-2 font-medium text-slate-400 text-center">#{row.serialNo}</td>
-                          <td className="px-4 py-2 font-bold text-slate-800">{row.itemDetails}</td>
+                          <td className="px-4 py-2 font-medium text-slate-400 text-center">{formatSerialNo(row.serialNo)}</td>
+                          <td className="px-4 py-2 font-bold text-slate-800">{row.itemName}</td>
                           <td className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">{row.group}</td>
-                          <td className="px-4 py-2 text-[10px] text-slate-500 font-mono uppercase">{row.itemCode}</td>
+                          <td className="px-4 py-2 text-[10px] text-slate-500 font-mono uppercase">{row.item}</td>
+                          <td className="px-4 py-2 text-right font-bold">{row.roiQty}</td>
+                          <td className="px-4 py-2 text-[10px] font-bold text-slate-500">{row.shelf1}</td>
                           <td className="px-4 py-2 text-right font-bold">{row.qty}</td>
                           <td className="px-4 py-2 text-center text-[10px] font-bold text-slate-500 uppercase">{row.unit}</td>
                           <td className="px-4 py-2 text-center">
-                            <button 
+                            <button
                               onClick={() => removePreviewItem(i)}
                               className="text-slate-400 hover:text-red-500 p-1.5 rounded-md hover:bg-red-50 transition-colors"
                             >
@@ -283,13 +377,13 @@ const UploadReport = () => {
 
             {/* Modal Footer */}
             <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-xl flex justify-end gap-3">
-              <button 
+              <button
                 onClick={() => setShowImportModal(false)}
                 className="px-5 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSave}
                 disabled={isUploading || previewData.length === 0}
                 className="px-6 py-2 text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
@@ -299,7 +393,7 @@ const UploadReport = () => {
             </div>
           </div>
         </div>
-      , document.body)}
+        , document.body)}
 
       {/* Master Data Header Info */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col max-h-[600px] mt-4">
@@ -312,7 +406,7 @@ const UploadReport = () => {
           <div className="flex gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
+              <input
                 type="text"
                 placeholder="Search master data..."
                 value={search}
@@ -320,11 +414,10 @@ const UploadReport = () => {
                 className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
               />
             </div>
-            <button 
+            <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 border rounded-lg flex items-center gap-2 text-xs font-bold transition-all shadow-sm ${
-                showFilters || filterGroup !== 'All' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
+              className={`px-4 py-2 border rounded-lg flex items-center gap-2 text-xs font-bold transition-all shadow-sm ${showFilters || filterGroup !== 'All' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
             >
               <Filter size={16} /> Filter
             </button>
@@ -334,7 +427,7 @@ const UploadReport = () => {
             <div className="p-3 bg-white border border-slate-200 rounded-lg flex gap-4 animate-in fade-in slide-in-from-top-1">
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-400 uppercase px-1">Group</label>
-                <select 
+                <select
                   value={filterGroup}
                   onChange={(e) => setFilterGroup(e.target.value)}
                   className="block w-40 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-blue-500 outline-none font-medium"
@@ -345,16 +438,18 @@ const UploadReport = () => {
             </div>
           )}
         </div>
-        
+
         {/* Master Data Table */}
         <div className="overflow-auto flex-1 scrollbar-hide">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead className="sticky top-0 bg-slate-100 text-slate-600 uppercase text-[10px] font-bold tracking-wider z-10 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 w-16 text-center">SN</th>
-                <th className="px-4 py-3">Item Details</th>
+                <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
-                <th className="px-4 py-3">Item Code</th>
+                <th className="px-4 py-3">Item</th>
+                <th className="px-4 py-3 w-24 text-right">ROI Qty</th>
+                <th className="px-4 py-3">Shelf 1</th>
                 <th className="px-4 py-3 w-24 text-right">Qty</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 <th className="px-4 py-3 text-center w-32">Date</th>
@@ -363,14 +458,16 @@ const UploadReport = () => {
             <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700">
               {filteredItems.slice().reverse().map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-slate-400 text-center">#{item.serialNo}</td>
-                  <td className="px-4 py-3 font-bold text-slate-800">{item.itemDetails}</td>
+                  <td className="px-4 py-3 font-medium text-slate-400 text-center">{formatSerialNo(item.serialNo)}</td>
+                  <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
-                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.itemCode}</td>
+                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
+                  <td className="px-4 py-3 text-[10px] font-bold text-slate-500">{item.shelf1}</td>
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{item.qty}</td>
                   <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</td>
-                  <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium">
-                    {new Date(item.dispatchedAt || item.confirmedAt || item.approvedAt || item.uploadedAt).toLocaleDateString()}
+                  <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                    {formatDateTime(item.dispatchedAt || item.confirmedAt || item.approvedAt || item.uploadedAt)}
                   </td>
                 </tr>
               ))}
