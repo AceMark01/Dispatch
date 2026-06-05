@@ -278,7 +278,7 @@ const UploadReport = () => {
                     <input type="text" value={manualItem.group} onChange={e => setManualItem({ ...manualItem, group: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="e.g. ELECTRONICS" />
                   </div>
                   <div className="space-y-1.5 min-w-[100px]">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Item</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Item Code</label>
                     <input type="text" value={manualItem.item} onChange={e => setManualItem({ ...manualItem, item: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Item Code" />
                   </div>
                   <div className="space-y-1.5 min-w-[80px]">
@@ -329,7 +329,7 @@ const UploadReport = () => {
                         <th className="px-4 py-2.5 w-16 text-center">SN</th>
                         <th className="px-4 py-2.5">Item Name</th>
                         <th className="px-4 py-2.5">Group</th>
-                        <th className="px-4 py-2.5">Item</th>
+                        <th className="px-4 py-2.5">Item Code</th>
                         <th className="px-4 py-2.5 text-right">ROI Qty</th>
                         <th className="px-4 py-2.5">Shelf 1</th>
                         <th className="px-4 py-2.5 text-right">Qty</th>
@@ -447,7 +447,7 @@ const UploadReport = () => {
                 <th className="px-4 py-3 w-16 text-center">SN</th>
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
-                <th className="px-4 py-3">Item</th>
+                <th className="px-4 py-3">Item Code</th>
                 <th className="px-4 py-3 w-24 text-right">ROI Qty</th>
                 <th className="px-4 py-3">Shelf 1</th>
                 <th className="px-4 py-3 w-24 text-right">Qty</th>

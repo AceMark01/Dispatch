@@ -285,7 +285,7 @@ const ConfirmPage = () => {
                 {activeTab === 'Pending' && <th className="px-4 py-3 w-32 text-center">Action</th>}
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
-                <th className="px-4 py-3">Item</th>
+                <th className="px-4 py-3">Item Code</th>
                 <th className="px-4 py-3 w-24 text-right">Qty</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}

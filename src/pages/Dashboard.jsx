@@ -314,7 +314,7 @@ const Dashboard = () => {
                 <th className="px-4 py-3 w-16 text-center">SN</th>
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
-                <th className="px-4 py-3">Item</th>
+                <th className="px-4 py-3">Item Code</th>
                 <th className="px-4 py-3 w-28 text-right">Order Qty</th>
                 <th className="px-4 py-3 w-28 text-right">Dispatched Qty</th>
                 <th className="px-4 py-3 w-28 text-right">Remaining Qty</th>

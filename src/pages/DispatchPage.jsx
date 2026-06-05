@@ -316,12 +316,12 @@ const DispatchPage = () => {
                 <th className="px-4 py-3 w-16 text-center">SN</th>
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
-                <th className="px-4 py-3">Item</th>
-                <th className="px-4 py-3 w-48">Remark</th>
+                <th className="px-4 py-3">Item Code</th>
                 <th className="px-4 py-3 w-24 text-right">Ordered Qty</th>
-                <th className="px-4 py-3 w-32 text-right">{activeTab === 'Pending' ? 'Dispatch Qty' : 'Dispatched Qty'}</th>
                 {activeTab === 'Pending' && <th className="px-4 py-3 w-24 text-right">Remaining Qty</th>}
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
+                <th className="px-4 py-3 w-48">Remark</th>
+                <th className="px-4 py-3 w-32 text-right">{activeTab === 'Pending' ? 'Dispatch Qty' : 'Dispatched Qty'}</th>
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}
               </tr>
             </thead>
@@ -353,6 +353,26 @@ const DispatchPage = () => {
                     <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
                     <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
 
+                    <td className="px-4 py-3 text-right font-bold text-slate-800">
+                      {item.qty}
+                    </td>
+
+                    {activeTab === 'Pending' && (
+                      <td className="px-4 py-3 text-right">
+                        {selectedIds.includes(item.id) ? (
+                          <span className={`font-bold ${remaining > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                            {remaining}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-bold">{item.qty}</span>
+                        )}
+                      </td>
+                    )}
+
+                    <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">
+                      {item.unit}
+                    </td>
+
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
                         <input
@@ -365,10 +385,6 @@ const DispatchPage = () => {
                       ) : (
                         <span className="text-slate-400 italic text-[11px] truncate max-w-[150px] block">{item.remark || '-'}</span>
                       )}
-                    </td>
-
-                    <td className="px-4 py-3 text-right font-bold text-slate-800">
-                      {item.qty}
                     </td>
 
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -391,21 +407,6 @@ const DispatchPage = () => {
                       ) : (
                         <span className="font-bold text-slate-800">{activeTab === 'History' ? item.qty : '-'}</span>
                       )}
-                    </td>
-
-                    {activeTab === 'Pending' && (
-                      <td className="px-4 py-3 text-right">
-                        {selectedIds.includes(item.id) ? (
-                          <span className={`font-bold ${remaining > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                            {remaining}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 font-bold">{item.qty}</span>
-                        )}
-                      </td>
-                    )}
-                    <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">
-                      {item.unit}
                     </td>
 
                     {activeTab === 'History' && (
