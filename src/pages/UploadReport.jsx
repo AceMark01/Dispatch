@@ -252,7 +252,6 @@ const UploadReport = () => {
                   </label>
                 </div>
               </div>
-
               {/* Option 2: Manual Entry Form */}
               <div className="space-y-3">
                 <div className="text-sm text-slate-800 font-bold flex items-center gap-2">
@@ -263,10 +262,10 @@ const UploadReport = () => {
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Serial No</label>
                     <input
                       type="text"
-                      value={manualItem.serialNo}
-                      readOnly
-                      className="w-full px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-700 outline-none cursor-default"
-                      title="Auto-generated serial number"
+                      value=""
+                      onChange={e => setManualItem({ ...manualItem, serialNo: e.target.value })}
+                      className="w-full px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-700 outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                      placeholder="Serial No"
                     />
                   </div>
                   <div className="space-y-1.5 min-w-[150px] flex-1">
@@ -305,6 +304,7 @@ const UploadReport = () => {
                   </button>
                 </div>
               </div>
+
 
               {/* Preview Table */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mt-4">
