@@ -327,8 +327,8 @@ const DispatchPage = () => {
             </thead>
             <tbody className="divide-y divide-slate-100 text-[12px]">
               {paginatedItems.map((item) => {
-                const currentDisp = rowEdits[item.id]?.dispatchQty ?? item.qty;
-                const remaining = Number(item.qty) - Number(currentDisp);
+                const currentDisp = rowEdits[item.id]?.dispatchQty ?? (item.pendingQty || item.qty);
+                const remaining = Number(item.pendingQty ?? item.qty) - Number(currentDisp);
 
                 return (
                   <tr
@@ -354,7 +354,7 @@ const DispatchPage = () => {
                     <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
 
                     <td className="px-4 py-3 text-right font-bold text-slate-800">
-                      {item.qty}
+                      {item.orderedQty || item.qty}
                     </td>
 
                     {activeTab === 'Pending' && (
@@ -364,7 +364,7 @@ const DispatchPage = () => {
                             {remaining}
                           </span>
                         ) : (
-                          <span className="text-slate-400 font-bold">{item.qty}</span>
+                          <span className="text-slate-400 font-bold">{item.pendingQty ?? item.qty}</span>
                         )}
                       </td>
                     )}
@@ -405,7 +405,7 @@ const DispatchPage = () => {
                           </button>
                         </div>
                       ) : (
-                        <span className="font-bold text-slate-800">{activeTab === 'History' ? item.qty : '-'}</span>
+                        <span className="font-bold text-slate-800">{activeTab === 'History' ? (item.totalDispatch || item.dispatchedQty || item.qty) : '-'}</span>
                       )}
                     </td>
 

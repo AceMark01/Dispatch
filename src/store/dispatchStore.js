@@ -319,7 +319,8 @@ export const useDispatchStore = create(
                 orderedQty: Number(row[7]) || 0,
                 dispatchedQty: 0,
                 remainingQty: Number(row[7]) || 0,
-                pendingQty: Number(row[21]) || 0  // Column V: Pending
+                pendingQty: Number(row[21]) || 0,   // Column V: Pending (remaining)
+                totalDispatch: Number(row[20]) || 0  // Column U: Total Dispatch
               };
             }).filter(Boolean);
 
