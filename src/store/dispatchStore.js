@@ -327,18 +327,18 @@ export const useDispatchStore = create(
             let finalItems = mappedItems;
             try {
               const dispatchRaw = await fetchSheetData('Dispatch');
-              // Dispatch columns: Confirm Actual 2 date(0), Serial No.(1), Item Name(2),
-              // Group(3), Item(4), Remark(5), Ordered Qty(6), Dispatched Qty(7),
-              // Remaining Qty(8), unit(9), status(10), Dispatch Date(11)
+              // Dispatch columns: A(0):date, B(1):Serial No., C(2):Dispatch No., D(3):Item Name,
+              // E(4):Group, F(5):Item, G(6):Remark, H(7):Ordered Qty, I(8):Dispatched Qty,
+              // J(9):Remaining Qty, K(10):unit, L(11):status, M(12):Dispatch Date
               if (dispatchRaw && dispatchRaw.length > 0) {
-                const dispatchRows = dispatchRaw.filter(r => r[1] || r[2]);
+                const dispatchRows = dispatchRaw.filter(r => r[1] || r[3]);
                 dispatchRows.forEach(dRow => {
                   const serialNo = dRow[1] || '';
-                  const dispatchedQty = Number(dRow[7]) || 0;
-                  const orderedQty = Number(dRow[6]) || 0;
-                  const remainingQty = Number(dRow[8]) || 0;
-                  const dispatchDate = parseSheetDate(dRow[11]);
-                  const remark = dRow[5] || '';
+                  const dispatchedQty = Number(dRow[8]) || 0;
+                  const orderedQty = Number(dRow[7]) || 0;
+                  const remainingQty = Number(dRow[9]) || 0;
+                  const dispatchDate = parseSheetDate(dRow[12]);
+                  const remark = dRow[6] || '';
 
                   // Mark matching Report items as Dispatched and set quantities
                   finalItems = finalItems.map(item => {
