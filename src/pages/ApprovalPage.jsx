@@ -108,7 +108,7 @@ const ApprovalPage = () => {
   return (
     <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-slate-800">Ace-Mark Approval</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Confirm order</h1>
         <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
           <button
             onClick={() => { setActiveTab('Pending'); setSelectedIds([]); }}
@@ -288,6 +288,14 @@ const ApprovalPage = () => {
                   <p className="text-xs font-medium text-slate-500">#{item.serialNo}</p>
                 </div>
                 <div className="text-right">
+                  <p className="text-[9px] text-slate-400 uppercase font-bold">ROI Qty</p>
+                  <p className="text-xs font-semibold text-slate-600">{item.roiQty}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-400 uppercase font-bold">Shelf 1</p>
+                  <p className="text-xs font-semibold text-slate-600">{item.shelf1}</p>
+                </div>
+                <div className="col-span-2 text-right">
                   <p className="text-[9px] text-slate-400 uppercase font-bold">Original Qty</p>
                   <p className="text-xs font-bold text-slate-800">{item.qty} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span></p>
                 </div>
@@ -319,6 +327,8 @@ const ApprovalPage = () => {
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
                 <th className="px-4 py-3">Item Code</th>
+                <th className="px-4 py-3 w-24 text-right">ROI Qty</th>
+                <th className="px-4 py-3">Shelf 1</th>
                 <th className="px-4 py-3 w-24 text-right">Qty</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}
@@ -376,6 +386,8 @@ const ApprovalPage = () => {
                   <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
                   <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
+                  <td className="px-4 py-3 text-[10px] font-bold text-slate-500">{item.shelf1}</td>
 
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     {activeTab === 'Pending' && selectedIds.includes(item.id) ? (

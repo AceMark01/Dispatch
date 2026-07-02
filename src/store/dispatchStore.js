@@ -118,6 +118,7 @@ export const useDispatchStore = create(
   persist(
     (set, get) => ({
       items: [],
+      backendItems: [],
       isLoading: false,
       error: null,
       nextDispatchNo: 1,
@@ -382,6 +383,26 @@ export const useDispatchStore = create(
         } catch (error) {
           set({ error: error.message, isLoading: false });
           console.error("Failed to fetch from sheet:", error);
+        }
+      },
+
+      // Fetch the Backend master sheet (Item Name | Group | Item Code | MOQ)
+      // Header is at row 1, data starts at row 2.
+      fetchBackendData: async () => {
+        try {
+          const { fetchSheetData } = await import('../utils/api');
+          const raw = await fetchSheetData('Backend');
+          if (raw && raw.length > 1) {
+            const backendItems = raw.slice(1).map(r => ({
+              itemName: (r[0] || '').toString().trim(),
+              group: (r[1] || '').toString().trim(),
+              itemCode: (r[2] || '').toString().trim(),
+              moq: (r[3] || '').toString().trim(),
+            })).filter(b => b.itemName);
+            set({ backendItems });
+          }
+        } catch (error) {
+          console.error('Failed to fetch Backend sheet:', error);
         }
       },
 

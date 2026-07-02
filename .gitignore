@@ -15,6 +15,9 @@ dist
 dist-ssr
 *.local
 
+# Google Apps Script backend - do NOT commit
+Code.gs
+
 # Environment variables - NEVER commit these
 .env
 .env.local

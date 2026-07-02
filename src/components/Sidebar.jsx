@@ -25,9 +25,8 @@ const Sidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { path: '/dashboard', icon: BookOpen, label: 'Dashboard' },
     { path: '/upload', icon: Plus, label: 'Upload Report' },
-    { path: '/approval', icon: CheckCircle, label: 'Approval' },
-    { path: '/confirm', icon: FileText, label: 'Confirm' },
-    { path: '/dispatch', icon: Users, label: 'Dispatch' },
+    { path: '/approval', icon: CheckCircle, label: 'Confirm order' },
+    { path: '/approved', icon: CheckCircle, label: 'Approved' },
     { path: '/setting', icon: Settings, label: 'Setting' },
   ];
 

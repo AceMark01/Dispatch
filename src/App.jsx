@@ -6,8 +6,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UploadReport from './pages/UploadReport';
 import ApprovalPage from './pages/ApprovalPage';
-import ConfirmPage from './pages/ConfirmPage';
-import DispatchPage from './pages/DispatchPage';
+import ApprovedPage from './pages/ApprovedPage';
 import Setting from './pages/Setting';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -28,8 +27,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="upload" element={<UploadReport />} />
             <Route path="approval" element={<ApprovalPage />} />
-            <Route path="confirm" element={<ConfirmPage />} />
-            <Route path="dispatch" element={<DispatchPage />} />
+            <Route path="approved" element={<ApprovedPage />} />
             <Route path="setting" element={<Setting />} />
           </Route>
 

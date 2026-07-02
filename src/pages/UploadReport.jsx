@@ -1,13 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatchStore } from '../store/dispatchStore';
 import * as XLSX from 'xlsx';
 import { Upload, FileSpreadsheet, Check, AlertCircle, Trash2, Search, Filter, Download, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// --- Helpers for Backend lookup + Order Quantity calculation ---
+
+// Parse any messy value ("3.00", "-1.00", "52 pcs") into a number
+const parseNum = (val) => {
+  if (val === null || val === undefined || val === '') return 0;
+  const n = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+  return isNaN(n) ? 0 : n;
+};
+
+// Normalise item names for matching: trim, collapse spaces, lowercase
+const normalizeName = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+// Order Quantity logic:
+//   if Current Stock <= ROL  ->  Order = max(Shelf - Stock, MOQ)
+//   else                     ->  Order = 0
+const computeOrderQty = (rol, shelf, stock, moq) => {
+  const R = parseNum(rol);
+  const S = parseNum(shelf);
+  const CS = parseNum(stock);
+  const M = parseNum(moq);
+  if (CS <= R) {
+    const order = Math.max(S - CS, M);
+    return Math.max(0, Math.round(order));
+  }
+  return 0;
+};
+
 const UploadReport = () => {
-  const { items, addItems } = useDispatchStore();
+  const { items, addItems, backendItems, fetchBackendData } = useDispatchStore();
   const [previewData, setPreviewData] = useState([]);
+
+  // Load the Backend master sheet once so we can map Item Code / Group / MOQ
+  useEffect(() => {
+    fetchBackendData();
+  }, [fetchBackendData]);
+
+  // Lookup map: normalised item name -> { itemCode, group, moq }
+  const backendMap = useMemo(() => {
+    const m = new Map();
+    (backendItems || []).forEach(b => m.set(normalizeName(b.itemName), b));
+    return m;
+  }, [backendItems]);
+
+  // Enrich a row with Backend data + computed Order Qty (used by both tables)
+  const enrichItem = (item) => {
+    const match = backendMap.get(normalizeName(item.itemName));
+    const hasCode = item.item && item.item !== 'N/A' && item.item !== '';
+    const itemCode = hasCode ? item.item : (match?.itemCode || '');
+    const group = match?.group || item.group;
+    const moq = item.moq ?? match?.moq ?? '';
+    const orderQty = computeOrderQty(item.roiQty, item.shelf1, item.qty, moq);
+    return { ...item, item: itemCode, group, moq, orderQty };
+  };
   const [isUploading, setIsUploading] = useState(false);
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('All');
@@ -94,17 +144,19 @@ const UploadReport = () => {
             }
           }
 
-          return {
+          const base = {
             serialNo: sn,
             itemName: row['Item Name'] || row['Item Details'] || 'N/A',
-            group: row['Group'] || 'N/A',
-            item: row['Item'] || row['Item Code'] || 'N/A',
-            roiQty: row['ROI Qty'] || '',
+            group: row['Group'] || row['GROUP'] || 'N/A',
+            item: row['Item'] || row['Item Code'] || '',
+            roiQty: row['ROI Qty'] || row['ROL Qty'] || '',
             shelf1: row['Shelf 1'] || '',
-            qty: row['Qty'] || row['Quantity'] || 0,
+            qty: row['Qty'] || row['Qty.'] || row['Quantity'] || 0,
             unit: row['Unit'] || 'PCS',
             remark: row['Remark'] || '',
           };
+          // Map Item Code / Group / MOQ from Backend sheet + compute Order Qty
+          return enrichItem(base);
         });
 
         setPreviewData(prev => [...prev, ...mappedData]);
@@ -152,10 +204,10 @@ const UploadReport = () => {
       toast.error("Item Name and Qty are required");
       return;
     }
-    const newPreview = [...previewData, {
+    const newPreview = [...previewData, enrichItem({
       ...manualItem,
       serialNo: manualItem.serialNo || getNextSerialNo()
-    }];
+    })];
     setPreviewData(newPreview);
     // Reset form but pre-fill next serial no based on updated preview
     setManualItem({
@@ -330,9 +382,11 @@ const UploadReport = () => {
                         <th className="px-4 py-2.5">Item Name</th>
                         <th className="px-4 py-2.5">Group</th>
                         <th className="px-4 py-2.5">Item Code</th>
-                        <th className="px-4 py-2.5 text-right">ROI Qty</th>
+                        <th className="px-4 py-2.5 text-right">ROL Qty</th>
                         <th className="px-4 py-2.5">Shelf 1</th>
                         <th className="px-4 py-2.5 text-right">Qty</th>
+                        <th className="px-4 py-2.5 text-right">MOQ</th>
+                        <th className="px-4 py-2.5 text-right">Order Qty</th>
                         <th className="px-4 py-2.5 text-center">Unit</th>
                         <th className="px-4 py-2.5 text-center">Action</th>
                       </tr>
@@ -347,6 +401,8 @@ const UploadReport = () => {
                           <td className="px-4 py-2 text-right font-bold">{row.roiQty}</td>
                           <td className="px-4 py-2 text-[10px] font-bold text-slate-500">{row.shelf1}</td>
                           <td className="px-4 py-2 text-right font-bold">{row.qty}</td>
+                          <td className="px-4 py-2 text-right font-bold text-slate-600">{row.moq}</td>
+                          <td className="px-4 py-2 text-right font-black text-blue-600">{row.orderQty}</td>
                           <td className="px-4 py-2 text-center text-[10px] font-bold text-slate-500 uppercase">{row.unit}</td>
                           <td className="px-4 py-2 text-center">
                             <button
@@ -360,7 +416,7 @@ const UploadReport = () => {
                       ))}
                       {previewData.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-4 py-10 text-center">
+                          <td colSpan={11} className="px-4 py-10 text-center">
                             <div className="flex flex-col items-center gap-2 text-slate-400">
                               <FileSpreadsheet size={24} className="opacity-50" />
                               <span className="text-xs font-medium">No items added yet. Upload a file or add manually above.</span>
@@ -448,15 +504,19 @@ const UploadReport = () => {
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
                 <th className="px-4 py-3">Item Code</th>
-                <th className="px-4 py-3 w-24 text-right">ROI Qty</th>
+                <th className="px-4 py-3 w-24 text-right">ROL Qty</th>
                 <th className="px-4 py-3">Shelf 1</th>
                 <th className="px-4 py-3 w-24 text-right">Qty</th>
+                <th className="px-4 py-3 w-20 text-right">MOQ</th>
+                <th className="px-4 py-3 w-24 text-right">Order Qty</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 <th className="px-4 py-3 text-center w-32">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700">
-              {filteredItems.slice().reverse().map((item) => (
+              {filteredItems.slice().reverse().map((rawItem) => {
+                const item = enrichItem(rawItem);
+                return (
                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-slate-400 text-center">{formatSerialNo(item.serialNo)}</td>
                   <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
@@ -465,15 +525,18 @@ const UploadReport = () => {
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500">{item.shelf1}</td>
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{item.qty}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-600">{item.moq}</td>
+                  <td className="px-4 py-3 text-right font-black text-blue-600">{item.orderQty}</td>
                   <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</td>
                   <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium whitespace-nowrap">
                     {formatDateTime(item.dispatchedAt || item.confirmedAt || item.approvedAt || item.uploadedAt)}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center text-slate-400">
+                  <td colSpan={11} className="px-4 py-16 text-center text-slate-400">
                     <div className="flex flex-col items-center gap-2">
                       <Search size={24} className="opacity-50" />
                       <span className="text-sm font-medium">No matching records found</span>
