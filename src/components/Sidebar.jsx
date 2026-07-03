@@ -12,6 +12,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { canAccess } from '../utils/access';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -23,12 +24,12 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const menuItems = [
-    { path: '/dashboard', icon: BookOpen, label: 'Dashboard' },
-    { path: '/upload', icon: Plus, label: 'Upload Report' },
-    { path: '/approval', icon: CheckCircle, label: 'Confirm order' },
-    { path: '/approved', icon: CheckCircle, label: 'Approved' },
-    { path: '/setting', icon: Settings, label: 'Setting' },
-  ];
+    { path: '/dashboard', icon: BookOpen, label: 'Dashboard', key: 'Dashboard' },
+    { path: '/upload', icon: Plus, label: 'Upload Report', key: 'Upload' },
+    { path: '/approval', icon: CheckCircle, label: 'Confirm order', key: 'Confirm order' },
+    { path: '/approved', icon: CheckCircle, label: 'Approved', key: 'Approved' },
+    { path: '/setting', icon: Settings, label: 'Setting', key: 'Setting' },
+  ].filter(item => canAccess(user, item.key));
 
   return (
     <>

@@ -4,33 +4,7 @@ import { useDispatchStore } from '../store/dispatchStore';
 import * as XLSX from 'xlsx';
 import { Upload, FileSpreadsheet, Check, AlertCircle, Trash2, Search, Filter, Download, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-// --- Helpers for Backend lookup + Order Quantity calculation ---
-
-// Parse any messy value ("3.00", "-1.00", "52 pcs") into a number
-const parseNum = (val) => {
-  if (val === null || val === undefined || val === '') return 0;
-  const n = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
-  return isNaN(n) ? 0 : n;
-};
-
-// Normalise item names for matching: trim, collapse spaces, lowercase
-const normalizeName = (s) => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
-
-// Order Quantity logic:
-//   if Current Stock <= ROL  ->  Order = max(Shelf - Stock, MOQ)
-//   else                     ->  Order = 0
-const computeOrderQty = (rol, shelf, stock, moq) => {
-  const R = parseNum(rol);
-  const S = parseNum(shelf);
-  const CS = parseNum(stock);
-  const M = parseNum(moq);
-  if (CS <= R) {
-    const order = Math.max(S - CS, M);
-    return Math.max(0, Math.round(order));
-  }
-  return 0;
-};
+import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
 
 const UploadReport = () => {
   const { items, addItems, backendItems, fetchBackendData } = useDispatchStore();
@@ -42,22 +16,10 @@ const UploadReport = () => {
   }, [fetchBackendData]);
 
   // Lookup map: normalised item name -> { itemCode, group, moq }
-  const backendMap = useMemo(() => {
-    const m = new Map();
-    (backendItems || []).forEach(b => m.set(normalizeName(b.itemName), b));
-    return m;
-  }, [backendItems]);
+  const backendMap = useMemo(() => buildBackendMap(backendItems), [backendItems]);
 
   // Enrich a row with Backend data + computed Order Qty (used by both tables)
-  const enrichItem = (item) => {
-    const match = backendMap.get(normalizeName(item.itemName));
-    const hasCode = item.item && item.item !== 'N/A' && item.item !== '';
-    const itemCode = hasCode ? item.item : (match?.itemCode || '');
-    const group = match?.group || item.group;
-    const moq = item.moq ?? match?.moq ?? '';
-    const orderQty = computeOrderQty(item.roiQty, item.shelf1, item.qty, moq);
-    return { ...item, item: itemCode, group, moq, orderQty };
-  };
+  const enrichItem = (item) => enrichWithBackend(item, backendMap);
   const [isUploading, setIsUploading] = useState(false);
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('All');
@@ -333,15 +295,15 @@ const UploadReport = () => {
                     <input type="text" value={manualItem.item} onChange={e => setManualItem({ ...manualItem, item: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Item Code" />
                   </div>
                   <div className="space-y-1.5 min-w-[80px]">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">ROI Qty</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Reorder Level</label>
                     <input type="number" value={manualItem.roiQty} onChange={e => setManualItem({ ...manualItem, roiQty: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="0" />
                   </div>
                   <div className="space-y-1.5 min-w-[80px]">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Shelf 1</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Shelf Qty</label>
                     <input type="text" value={manualItem.shelf1} onChange={e => setManualItem({ ...manualItem, shelf1: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="Shelf" />
                   </div>
                   <div className="space-y-1.5 min-w-[80px]">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Qty*</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Current Stock*</label>
                     <input type="number" value={manualItem.qty} onChange={e => setManualItem({ ...manualItem, qty: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-500 focus:bg-white transition-colors" placeholder="0" />
                   </div>
                   <div className="space-y-1.5 min-w-[80px]">
@@ -382,9 +344,9 @@ const UploadReport = () => {
                         <th className="px-4 py-2.5">Item Name</th>
                         <th className="px-4 py-2.5">Group</th>
                         <th className="px-4 py-2.5">Item Code</th>
-                        <th className="px-4 py-2.5 text-right">ROL Qty</th>
-                        <th className="px-4 py-2.5">Shelf 1</th>
-                        <th className="px-4 py-2.5 text-right">Qty</th>
+                        <th className="px-4 py-2.5 text-right">Reorder Level</th>
+                        <th className="px-4 py-2.5">Shelf Qty</th>
+                        <th className="px-4 py-2.5 text-right">Current Stock</th>
                         <th className="px-4 py-2.5 text-right">MOQ</th>
                         <th className="px-4 py-2.5 text-right">Order Qty</th>
                         <th className="px-4 py-2.5 text-center">Unit</th>
@@ -400,7 +362,7 @@ const UploadReport = () => {
                           <td className="px-4 py-2 text-[10px] text-slate-500 font-mono uppercase">{row.item}</td>
                           <td className="px-4 py-2 text-right font-bold">{row.roiQty}</td>
                           <td className="px-4 py-2 text-[10px] font-bold text-slate-500">{row.shelf1}</td>
-                          <td className="px-4 py-2 text-right font-bold">{row.qty}</td>
+                          <td className="px-4 py-2 text-right font-bold">{currentStock(row.qty)}</td>
                           <td className="px-4 py-2 text-right font-bold text-slate-600">{row.moq}</td>
                           <td className="px-4 py-2 text-right font-black text-blue-600">{row.orderQty}</td>
                           <td className="px-4 py-2 text-center text-[10px] font-bold text-slate-500 uppercase">{row.unit}</td>
@@ -504,9 +466,9 @@ const UploadReport = () => {
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
                 <th className="px-4 py-3">Item Code</th>
-                <th className="px-4 py-3 w-24 text-right">ROL Qty</th>
-                <th className="px-4 py-3">Shelf 1</th>
-                <th className="px-4 py-3 w-24 text-right">Qty</th>
+                <th className="px-4 py-3 w-24 text-right">Reorder Level</th>
+                <th className="px-4 py-3">Shelf Qty</th>
+                <th className="px-4 py-3 w-24 text-right">Current Stock</th>
                 <th className="px-4 py-3 w-20 text-right">MOQ</th>
                 <th className="px-4 py-3 w-24 text-right">Order Qty</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
@@ -524,7 +486,7 @@ const UploadReport = () => {
                   <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500">{item.shelf1}</td>
-                  <td className="px-4 py-3 text-right font-bold text-slate-800">{item.qty}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{currentStock(item.qty)}</td>
                   <td className="px-4 py-3 text-right font-bold text-slate-600">{item.moq}</td>
                   <td className="px-4 py-3 text-right font-black text-blue-600">{item.orderQty}</td>
                   <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</td>

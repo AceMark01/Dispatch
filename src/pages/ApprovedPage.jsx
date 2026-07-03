@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
 import { Search, Filter, CheckCircle } from 'lucide-react';
+import { currentStock } from '../utils/inventory';
 
 const ApprovedPage = () => {
   const { items } = useDispatchStore();
@@ -133,16 +134,16 @@ const ApprovedPage = () => {
                   <p className="text-xs font-medium text-slate-500">#{item.serialNo}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">ROI Qty</p>
+                  <p className="text-[9px] text-slate-400 uppercase font-bold">Reorder Level</p>
                   <p className="text-xs font-semibold text-slate-600">{item.roiQty}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Shelf 1</p>
+                  <p className="text-[9px] text-slate-400 uppercase font-bold">Shelf Qty</p>
                   <p className="text-xs font-semibold text-slate-600">{item.shelf1}</p>
                 </div>
                 <div className="col-span-2 text-right">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Qty</p>
-                  <p className="text-xs font-bold text-slate-800">{item.qty} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span></p>
+                  <p className="text-[9px] text-slate-400 uppercase font-bold">Current Stock</p>
+                  <p className="text-xs font-bold text-slate-800">{currentStock(item.qty)} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span></p>
                 </div>
               </div>
               <div className="text-[10px] text-slate-400 font-medium border-t border-slate-100 pt-2">
@@ -164,9 +165,9 @@ const ApprovedPage = () => {
                 <th className="px-4 py-3">Item Name</th>
                 <th className="px-4 py-3">Group</th>
                 <th className="px-4 py-3">Item Code</th>
-                <th className="px-4 py-3 w-24 text-right">ROI Qty</th>
-                <th className="px-4 py-3">Shelf 1</th>
-                <th className="px-4 py-3 w-24 text-right">Qty</th>
+                <th className="px-4 py-3 w-24 text-right">Reorder Level</th>
+                <th className="px-4 py-3">Shelf Qty</th>
+                <th className="px-4 py-3 w-24 text-right">Current Stock</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 <th className="px-4 py-3 w-24 text-center">Status</th>
                 <th className="px-4 py-3 text-center w-40">Approved Date</th>
@@ -181,7 +182,7 @@ const ApprovedPage = () => {
                   <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500">{item.shelf1}</td>
-                  <td className="px-4 py-3 text-right font-bold text-slate-800">{item.qty}</td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-800">{currentStock(item.qty)}</td>
                   <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</td>
                   <td className="px-4 py-3 text-center">
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">Approved</span>

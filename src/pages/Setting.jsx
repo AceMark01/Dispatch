@@ -510,7 +510,7 @@ export default function Setting() {
                 <div className="space-y-1 sm:space-y-1.5">
                   <label className="text-xs sm:text-sm text-slate-600">Page Access</label>
                   <div className="grid grid-cols-2 gap-2 mt-1 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    {['Dashboard', 'Upload', 'Approval', 'Confirm', 'Dispatch', 'Setting'].map(page => (
+                    {['Dashboard', 'Upload', 'Confirm order', 'Approved', 'Setting'].map(page => (
                       <label key={page} className="flex items-center gap-2 text-xs sm:text-sm text-slate-700 cursor-pointer">
                         <input 
                           type="checkbox" 

@@ -325,58 +325,8 @@ export const useDispatchStore = create(
               };
             }).filter(Boolean);
 
-            // Fetch Dispatch sheet and reconstruct dispatched items
-            let finalItems = mappedItems;
-            try {
-              const dispatchRaw = await fetchSheetData('Dispatch');
-              // Dispatch columns: A(0):date, B(1):Serial No., C(2):Dispatch No., D(3):Item Name,
-              // E(4):Group, F(5):Item, G(6):Remark, H(7):Ordered Qty, I(8):Dispatched Qty,
-              // J(9):Remaining Qty, K(10):unit, L(11):status, M(12):Dispatch Date
-              if (dispatchRaw && dispatchRaw.length > 0) {
-                const dispatchRows = dispatchRaw.filter(r => r[1] || r[3]);
-                dispatchRows.forEach(dRow => {
-                  const serialNo = dRow[1] || '';
-                  const dispatchedQty = Number(dRow[8]) || 0;
-                  const orderedQty = Number(dRow[7]) || 0;
-                  const remainingQty = Number(dRow[9]) || 0;
-                  const dispatchDate = parseSheetDate(dRow[12]);
-                  const remark = dRow[6] || '';
-
-                  // Mark matching Report items as Dispatched and set quantities
-                  finalItems = finalItems.map(item => {
-                    if (item.serialNo === serialNo) {
-                      // If it's a split item (which remains in Report as Confirmed/Yes but has a split remark)
-                      const isSplit = item.remark?.includes('Remaining from') || item.id.includes('SPLIT');
-                      if (isSplit) {
-                        return {
-                          ...item,
-                          orderedQty: Number(item.qty),
-                          dispatchedQty: 0,
-                          remainingQty: Number(item.qty)
-                        };
-                      }
-
-                      // Otherwise, it is the original item that was dispatched
-                      return {
-                        ...item,
-                        status: 'Dispatched',
-                        status2: 'Dispatched',
-                        dispatchedAt: dispatchDate || item.dispatchedAt,
-                        remark: remark || item.remark,
-                        orderedQty: orderedQty || Number(item.qty),
-                        dispatchedQty: dispatchedQty || Number(item.qty),
-                        remainingQty: remainingQty || 0
-                      };
-                    }
-                    return item;
-                  });
-                });
-              }
-            } catch (dispatchErr) {
-              console.warn('Could not fetch Dispatch sheet (may not exist yet):', dispatchErr.message);
-            }
-
-            set({ items: finalItems, isLoading: false });
+            // Dispatch sheet/flow has been removed from the app, so we only use the Report sheet.
+            set({ items: mappedItems, isLoading: false });
           } else {
             set({ isLoading: false });
           }
@@ -496,8 +446,11 @@ export const useDispatchStore = create(
             null,                                                    // J: Planned 1 (formula - do not write)
             formatDateTime(itemObj.actual1),                         // K: Actual 1
             null,                                                    // L: Delay 1 (formula - do not write)
-            itemObj.status1 || '',                                   // M: Status 1
-            null,                                                    // N: Planned 2 (formula - do not write)
+            itemObj.status1 || '',                                   // M: Status 1 (Approved / Rejected)
+            // N: Order Qty (only write when we have a value; else leave the cell untouched)
+            (itemObj.orderQtyManual !== undefined && itemObj.orderQtyManual !== null && itemObj.orderQtyManual !== '')
+              ? itemObj.orderQtyManual
+              : null,
             formatDateTime(itemObj.actual2),                         // O: Actual 2
             null,                                                    // P: Delay 2 (formula - do not write)
             itemObj.status2 || ''                                    // Q: Status 2

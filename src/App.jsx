@@ -9,6 +9,7 @@ import ApprovalPage from './pages/ApprovalPage';
 import ApprovedPage from './pages/ApprovedPage';
 import Setting from './pages/Setting';
 import ProtectedRoute from './components/ProtectedRoute';
+import RequireAccess, { HomeRedirect } from './components/RequireAccess';
 
 function App() {
   return (
@@ -23,12 +24,12 @@ function App() {
               <Layout />
             </ProtectedRoute>
           }>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="upload" element={<UploadReport />} />
-            <Route path="approval" element={<ApprovalPage />} />
-            <Route path="approved" element={<ApprovedPage />} />
-            <Route path="setting" element={<Setting />} />
+            <Route index element={<HomeRedirect />} />
+            <Route path="dashboard" element={<RequireAccess pageKey="Dashboard"><Dashboard /></RequireAccess>} />
+            <Route path="upload" element={<RequireAccess pageKey="Upload"><UploadReport /></RequireAccess>} />
+            <Route path="approval" element={<RequireAccess pageKey="Confirm order"><ApprovalPage /></RequireAccess>} />
+            <Route path="approved" element={<RequireAccess pageKey="Approved"><ApprovedPage /></RequireAccess>} />
+            <Route path="setting" element={<RequireAccess pageKey="Setting"><Setting /></RequireAccess>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
