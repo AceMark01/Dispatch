@@ -35,6 +35,21 @@ export const insertRow = async (rowData, sheetName = 'Report') => {
   }
 };
 
+// Send the approved order-confirmation WhatsApp template to a party.
+// params = { name, note, link }  -> template {{1}}, {{2}}, {{3}}
+export const sendWhatsApp = async (to, params) => {
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'sendWhatsApp', to, params })
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending WhatsApp:', error);
+    throw error;
+  }
+};
+
 export const updateRow = async (rowIndex, rowData, sheetName = 'Report') => {
   try {
     const response = await fetch(SCRIPT_URL, {

@@ -5,6 +5,8 @@ import * as XLSX from 'xlsx';
 import { Upload, FileSpreadsheet, Check, AlertCircle, Trash2, Search, Filter, Download, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
+import { sendWhatsApp } from '../utils/api';
+import { useSettingsStore } from '../store/settingsStore';
 
 const UploadReport = () => {
   const { items, addItems, backendItems, fetchBackendData } = useDispatchStore();
@@ -26,6 +28,9 @@ const UploadReport = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // WhatsApp order-confirmation config (saved once in Settings)
+  const { whatsapp } = useSettingsStore();
 
   // Parse any serial format to a number
   const parseSerial = (val) => {
@@ -135,12 +140,27 @@ const UploadReport = () => {
   const handleSave = () => {
     if (previewData.length === 0) return;
     setIsUploading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       addItems(previewData);
       setPreviewData([]);
       setIsUploading(false);
       setShowImportModal(false);
       toast.success('Data imported successfully');
+
+      // Send order-confirmation WhatsApp to the party (config saved in Settings)
+      if (whatsapp.enabled && whatsapp.partyPhone) {
+        try {
+          const res = await sendWhatsApp(whatsapp.partyPhone, {
+            name: whatsapp.partyName,
+            note: whatsapp.note,
+            link: whatsapp.link,
+          });
+          if (res && res.success) toast.success(`WhatsApp sent to ${whatsapp.partyName}`);
+          else toast.error(`WhatsApp failed: ${res?.error || 'unknown error'}`);
+        } catch (e) {
+          toast.error('WhatsApp send failed (check API setup)');
+        }
+      }
     }, 1000);
   };
 
@@ -319,6 +339,18 @@ const UploadReport = () => {
                 </div>
               </div>
 
+              {/* WhatsApp order confirmation status (config saved in Settings) */}
+              <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/60 flex items-center gap-2 text-xs">
+                {whatsapp.enabled && whatsapp.partyPhone ? (
+                  <span className="text-emerald-800">
+                    📲 On save, order confirmation will be sent to <b>{whatsapp.partyName}</b> ({whatsapp.partyPhone}).
+                  </span>
+                ) : (
+                  <span className="text-amber-700">
+                    ⚠️ WhatsApp order confirmation not set. Add the party number in <b>Settings → Order Confirmation (WhatsApp)</b> to enable auto-send.
+                  </span>
+                )}
+              </div>
 
               {/* Preview Table */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mt-4">

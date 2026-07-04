@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Search, Filter, Eye, EyeOff, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import WhatsAppSettings from '../components/WhatsAppSettings';
 
 const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT;
 const LOGIN_SHEET = import.meta.env.VITE_LOGIN_SHEET || 'Login';
@@ -188,6 +189,9 @@ export default function Setting() {
 
   return (
     <div className="flex flex-col h-full bg-[#f8fafc] p-4 gap-4 overflow-y-auto overflow-x-hidden scrollbar-hide">
+
+      {/* One-time WhatsApp order-confirmation settings */}
+      <WhatsAppSettings />
 
       {/* Search and Filters Bar */}
       <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-col lg:flex-row items-start lg:items-center gap-3 shadow-sm">
