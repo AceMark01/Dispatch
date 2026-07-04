@@ -250,7 +250,7 @@ export default function Setting() {
             {/* Mobile View: Cards */}
             <div className="md:hidden flex flex-col gap-2 p-2 overflow-y-auto flex-1 bg-slate-50/50">
               {paginatedUsers.map(u => (
-                <div key={u.serialNo} className="bg-white rounded-lg border border-slate-200 shadow-sm p-3 flex flex-col gap-2 relative">
+                <div key={u._rowIndex ?? u.serialNo} className="bg-white rounded-lg border border-slate-200 shadow-sm p-3 flex flex-col gap-2 relative">
                   <div className="flex justify-between items-center bg-slate-50 -mx-3 -mt-3 px-3 py-2 border-b border-slate-100 rounded-t-lg">
                     <span className="text-[11px] font-bold text-sky-600">{u.serialNo}</span>
                     <div className="flex items-center gap-2">
@@ -317,7 +317,7 @@ export default function Setting() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paginatedUsers.map(u => (
-                    <tr key={u.serialNo} className="hover:bg-slate-50 transition-colors group">
+                    <tr key={u._rowIndex ?? u.serialNo} className="hover:bg-slate-50 transition-colors group">
                       <td className="px-4 py-3 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
                           <button onClick={() => openEdit(u)} className="inline-flex items-center justify-center p-1.5 bg-sky-50 text-sky-600 rounded-md hover:bg-sky-100 transition-colors border border-sky-100" title="Edit">
