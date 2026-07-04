@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSettingsStore } from '../store/settingsStore';
 
-// One-time WhatsApp order-confirmation settings. Saved here, then used
-// automatically on the Upload page when a stock file is saved.
+// WhatsApp order-confirmation settings. Saved permanently to the "Config" sheet,
+// then used automatically on the Upload page when a stock file is saved.
 const WhatsAppSettings = () => {
-  const { whatsapp, setWhatsapp } = useSettingsStore();
+  const { whatsapp, loadWhatsappFromSheet, saveWhatsappToSheet } = useSettingsStore();
   const [form, setForm] = useState(whatsapp);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    setWhatsapp(form);
-    toast.success('WhatsApp settings saved');
+  // Load latest from the Config sheet on mount, then keep the form in sync
+  useEffect(() => {
+    loadWhatsappFromSheet();
+  }, [loadWhatsappFromSheet]);
+
+  useEffect(() => {
+    setForm(whatsapp);
+  }, [whatsapp]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await saveWhatsappToSheet(form);
+      if (res && res.success) toast.success('WhatsApp settings saved permanently');
+      else toast.error(`Save failed: ${res?.error || 'create a "Config" sheet tab'}`);
+    } catch (e) {
+      toast.error('Save failed — check the "Config" sheet / connection');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -54,9 +72,10 @@ const WhatsAppSettings = () => {
         <p className="text-[10px] text-slate-500">Saved once here — used automatically when a stock file is uploaded &amp; saved.</p>
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-2"
+          disabled={saving}
+          className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Save size={14} /> Save Settings
+          <Save size={14} /> {saving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
     </div>

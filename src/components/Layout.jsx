@@ -5,15 +5,18 @@ import Header from './Header';
 import Footer from './Footer';
 import { useAuthStore } from '../store/authStore';
 import { useDispatchStore } from '../store/dispatchStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAuthStore();
   const { fetchFromSheet } = useDispatchStore();
+  const { loadWhatsappFromSheet } = useSettingsStore();
 
   useEffect(() => {
     fetchFromSheet();
-  }, [fetchFromSheet]);
+    loadWhatsappFromSheet();
+  }, [fetchFromSheet, loadWhatsappFromSheet]);
 
   return (
     <div className="flex h-[100dvh] bg-white overflow-hidden">
