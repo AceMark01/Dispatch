@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
-import { Search, Filter, CheckCircle } from 'lucide-react';
+import { Search, Filter, CheckCircle, XCircle } from 'lucide-react';
 import { currentStock } from '../utils/inventory';
 
 const ApprovedPage = () => {
   const { items } = useDispatchStore();
+  const [activeTab, setActiveTab] = useState('Approved'); // 'Approved' | 'Rejected'
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  // Only approved items
-  const approvedItems = items.filter(i => i.status === 'Approved');
+  const approvedCount = items.filter(i => i.status === 'Approved').length;
+  const rejectedCount = items.filter(i => i.status === 'Rejected').length;
+  const isRejected = activeTab === 'Rejected';
 
-  const filteredItems = approvedItems.filter(i => {
+  // Items for the active tab (Approved or Rejected)
+  const shownItems = items.filter(i => i.status === activeTab);
+
+  const filteredItems = shownItems.filter(i => {
     const matchesSearch = (i.itemName || '').toLowerCase().includes(search.toLowerCase()) ||
       (i.item || '').toLowerCase().includes(search.toLowerCase()) ||
       i.serialNo?.toString().includes(search);
@@ -28,7 +33,7 @@ const ApprovedPage = () => {
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [search, filterGroup]);
+  }, [search, filterGroup, activeTab]);
 
   const groups = ['All', ...new Set(items.map(item => item.group))];
 
@@ -54,13 +59,25 @@ const ApprovedPage = () => {
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          <CheckCircle size={24} className="text-emerald-600" /> Approved
+          {isRejected ? <XCircle size={24} className="text-red-600" /> : <CheckCircle size={24} className="text-emerald-600" />}
+          Order Status
         </h1>
-        <span className="px-3 py-1.5 rounded-lg text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-          {approvedItems.length} items
-        </span>
+        <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
+          <button
+            onClick={() => setActiveTab('Approved')}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Approved' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+          >
+            Approved ({approvedCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('Rejected')}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Rejected' ? 'bg-red-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+          >
+            Rejected ({rejectedCount})
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -122,7 +139,7 @@ const ApprovedPage = () => {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.item}</span>
                   <h3 className="font-bold text-slate-800 text-sm">{item.itemName}</h3>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">Approved</span>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase ${isRejected ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{activeTab}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-100 mt-1">
                 <div>
@@ -147,12 +164,12 @@ const ApprovedPage = () => {
                 </div>
               </div>
               <div className="text-[10px] text-slate-400 font-medium border-t border-slate-100 pt-2">
-                Approved: {formatDateTime(item.approvedAt || item.actual1)}
+                {activeTab}: {formatDateTime(item.approvedAt || item.actual1)}
               </div>
             </div>
           ))}
           {paginatedItems.length === 0 && (
-            <div className="py-12 text-center text-slate-400 text-sm">No approved items yet</div>
+            <div className="py-12 text-center text-slate-400 text-sm">No {activeTab.toLowerCase()} items yet</div>
           )}
         </div>
 
@@ -170,7 +187,7 @@ const ApprovedPage = () => {
                 <th className="px-4 py-3 w-24 text-right">Current Stock</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 <th className="px-4 py-3 w-24 text-center">Status</th>
-                <th className="px-4 py-3 text-center w-40">Approved Date</th>
+                <th className="px-4 py-3 text-center w-40">{activeTab} Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-[12px]">
@@ -185,7 +202,7 @@ const ApprovedPage = () => {
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{currentStock(item.qty)}</td>
                   <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</td>
                   <td className="px-4 py-3 text-center">
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">Approved</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase ${isRejected ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{activeTab}</span>
                   </td>
                   <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium whitespace-nowrap">
                     {formatDateTime(item.approvedAt || item.actual1)}
@@ -196,7 +213,7 @@ const ApprovedPage = () => {
           </table>
           {paginatedItems.length === 0 && (
             <div className="py-12 text-center text-slate-400 text-sm italic">
-              No approved items yet
+              No {activeTab.toLowerCase()} items yet
             </div>
           )}
         </div>
