@@ -266,6 +266,10 @@ export const useDispatchStore = create(
               const approvedAt = parseSheetDate(row[10]);
               const delay1 = row[11] || '';
               const status1 = row[12] || '';
+              // Column N now stores the saved Order Qty (a plain number). Read it back
+              // so the approved/rejected order quantity persists across reloads.
+              const nRaw = row[13];
+              const orderQtyManual = (nRaw !== '' && nRaw != null && /^\s*\d+(\.\d+)?\s*$/.test(String(nRaw))) ? Number(nRaw) : undefined;
               const planned2 = parseSheetDate(row[13]);
               const confirmedAt = parseSheetDate(row[14]);
               const delay2 = row[15] || '';
@@ -316,6 +320,7 @@ export const useDispatchStore = create(
                 status,
                 confirmStatus,
                 dispatchedAt,
+                orderQtyManual,
                 remark: '',
                 orderedQty: Number(row[7]) || 0,
                 dispatchedQty: 0,

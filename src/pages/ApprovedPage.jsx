@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
 import { Search, Filter, CheckCircle, XCircle } from 'lucide-react';
-import { currentStock } from '../utils/inventory';
+import { currentStock, buildBackendMap, enrichItem } from '../utils/inventory';
 
 const ApprovedPage = () => {
-  const { items } = useDispatchStore();
+  const { items, backendItems, fetchBackendData } = useDispatchStore();
   const [activeTab, setActiveTab] = useState('Approved'); // 'Approved' | 'Rejected'
+
+  useEffect(() => { fetchBackendData(); }, [fetchBackendData]);
+  const backendMap = useMemo(() => buildBackendMap(backendItems), [backendItems]);
+  const enrich = (item) => enrichItem(item, backendMap);
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
@@ -132,7 +136,9 @@ const ApprovedPage = () => {
       <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         {/* Mobile View: Cards */}
         <div className="md:hidden flex flex-col gap-3 p-3 overflow-y-auto flex-1 bg-slate-50/50">
-          {paginatedItems.map((item) => (
+          {paginatedItems.map((rawItem) => {
+            const item = enrich(rawItem);
+            return (
             <div key={item.id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-2">
               <div className="flex justify-between items-start">
                 <div>
@@ -158,16 +164,21 @@ const ApprovedPage = () => {
                   <p className="text-[9px] text-slate-400 uppercase font-bold">Shelf Qty</p>
                   <p className="text-xs font-semibold text-slate-600">{item.shelf1}</p>
                 </div>
-                <div className="col-span-2 text-right">
+                <div className="text-right">
                   <p className="text-[9px] text-slate-400 uppercase font-bold">Current Stock</p>
                   <p className="text-xs font-bold text-slate-800">{currentStock(item.qty)} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span></p>
+                </div>
+                <div className="col-span-3 text-right bg-blue-50 rounded-lg p-1.5 border border-blue-100">
+                  <p className="text-[9px] text-blue-400 uppercase font-bold">Order Qty</p>
+                  <p className="text-sm font-black text-blue-600">{item.orderQty}</p>
                 </div>
               </div>
               <div className="text-[10px] text-slate-400 font-medium border-t border-slate-100 pt-2">
                 {activeTab}: {formatDateTime(item.approvedAt || item.actual1)}
               </div>
             </div>
-          ))}
+            );
+          })}
           {paginatedItems.length === 0 && (
             <div className="py-12 text-center text-slate-400 text-sm">No {activeTab.toLowerCase()} items yet</div>
           )}
@@ -185,13 +196,16 @@ const ApprovedPage = () => {
                 <th className="px-4 py-3 w-24 text-right">Reorder Level</th>
                 <th className="px-4 py-3">Shelf Qty</th>
                 <th className="px-4 py-3 w-24 text-right">Current Stock</th>
+                <th className="px-4 py-3 w-24 text-right">Order Qty</th>
                 <th className="px-4 py-3 w-16 text-center">Unit</th>
                 <th className="px-4 py-3 w-24 text-center">Status</th>
                 <th className="px-4 py-3 text-center w-40">{activeTab} Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-[12px]">
-              {paginatedItems.map((item) => (
+              {paginatedItems.map((rawItem) => {
+                const item = enrich(rawItem);
+                return (
                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-slate-400 text-center">#{item.serialNo}</td>
                   <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
@@ -200,6 +214,7 @@ const ApprovedPage = () => {
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500">{item.shelf1}</td>
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{currentStock(item.qty)}</td>
+                  <td className="px-4 py-3 text-right font-black text-blue-600">{item.orderQty}</td>
                   <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">{item.unit}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase ${isRejected ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{activeTab}</span>
@@ -208,7 +223,8 @@ const ApprovedPage = () => {
                     {formatDateTime(item.approvedAt || item.actual1)}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           {paginatedItems.length === 0 && (
