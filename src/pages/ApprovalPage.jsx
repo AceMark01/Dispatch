@@ -3,6 +3,7 @@ import { useDispatchStore } from '../store/dispatchStore';
 import { Check, X, Search, Filter, History, MousePointer2, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
+import ShareOrderButton from '../components/ShareOrderButton';
 
 const ApprovalPage = () => {
   const { items, updateItemStatus, backendItems, fetchBackendData } = useDispatchStore();
@@ -120,21 +121,24 @@ const ApprovalPage = () => {
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-slate-800">Confirm order</h1>
-        <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
-          <button
-            onClick={() => { setActiveTab('Pending'); setSelectedIds([]); }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Pending' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
-          >
-            Pending ({pendingItems.length})
-          </button>
-          <button
-            onClick={() => { setActiveTab('History'); setSelectedIds([]); }}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'History' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
-          >
-            History
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <ShareOrderButton items={filteredItems.map(enrichItem)} label="Share PDF" />
+          <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
+            <button
+              onClick={() => { setActiveTab('Pending'); setSelectedIds([]); }}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Pending' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              Pending ({pendingItems.length})
+            </button>
+            <button
+              onClick={() => { setActiveTab('History'); setSelectedIds([]); }}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'History' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              History
+            </button>
+          </div>
         </div>
       </div>
 
