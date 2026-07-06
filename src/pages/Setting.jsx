@@ -549,7 +549,7 @@ export default function Setting() {
                 form="userForm" 
                 type="submit" 
                 disabled={isSaving} 
-                className="flex-1 bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white font-medium py-2 sm:py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm text-xs sm:text-sm"
+                className="flex-1 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 disabled:bg-sky-400 text-white font-medium py-2 sm:py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm text-xs sm:text-sm"
               >
                 {isSaving ? (
                   <div className="w-4 h-4 sm:w-[18px] sm:h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin" />

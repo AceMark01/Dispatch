@@ -282,7 +282,7 @@ const UploadReport = () => {
                   />
                   <label
                     htmlFor="excel-upload"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-sm transition-all uppercase tracking-wider flex items-center gap-2"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-bold hover:from-blue-700 hover:to-indigo-700 cursor-pointer shadow-sm transition-all uppercase tracking-wider flex items-center gap-2"
                   >
                     <FileSpreadsheet size={14} /> Select File
                   </label>
@@ -438,7 +438,7 @@ const UploadReport = () => {
               <button
                 onClick={handleSave}
                 disabled={isUploading || previewData.length === 0}
-                className="px-6 py-2 text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-6 py-2 text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-lg flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isUploading ? 'Importing...' : <><Check size={16} /> Save to Master Table</>}
               </button>
@@ -448,7 +448,7 @@ const UploadReport = () => {
         , document.body)}
 
       {/* Master Data Header Info */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col max-h-[600px] mt-4">
+      <div className="glass-strong rounded-2xl overflow-hidden flex flex-col max-h-[600px] mt-4">
         <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-4">
           <div className="flex justify-between items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-slate-800">Master Report ({items.length} records)</h3>

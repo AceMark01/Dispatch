@@ -120,7 +120,7 @@ const Dashboard = () => {
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="glass-strong p-4 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-slate-700 flex items-center gap-2"><Filter size={16} /> Filter Items</h3>
             {hasActiveFilters && (
@@ -155,8 +155,8 @@ const Dashboard = () => {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {cards.map((stat, i) => (
-          <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className={`p-3 rounded-lg ${stat.bg} ${stat.color}`}><stat.icon size={24} /></div>
+          <div key={i} className="glass hover-lift p-4 rounded-2xl flex items-center gap-4">
+            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}><stat.icon size={24} /></div>
             <div>
               <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
               <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
@@ -167,7 +167,7 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top items to reorder */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-[400px] flex flex-col">
+        <div className="glass-strong p-6 rounded-2xl h-[400px] flex flex-col">
           <div className="flex items-baseline justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-800">Top Items to Reorder</h3>
             <span className="text-xs text-slate-500">Total Order Qty: <b className="text-blue-600">{stats.totalOrderQty}</b></span>
@@ -190,7 +190,7 @@ const Dashboard = () => {
         </div>
 
         {/* Status Distribution */}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-[400px] flex flex-col">
+        <div className="glass-strong p-6 rounded-2xl h-[400px] flex flex-col">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Status Distribution</h3>
           {statusData.length > 0 ? (
             <>
@@ -220,7 +220,7 @@ const Dashboard = () => {
       </div>
 
       {/* Items Overview Table */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+      <div className="glass-strong p-6 rounded-2xl flex flex-col">
         <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <h3 className="text-lg font-semibold text-slate-800">Items Overview</h3>
           {hasActiveFilters && (

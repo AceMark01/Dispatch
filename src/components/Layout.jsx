@@ -19,7 +19,7 @@ const Layout = () => {
   }, [fetchFromSheet, loadWhatsappFromSheet]);
 
   return (
-    <div className="flex h-[100dvh] bg-white overflow-hidden">
+    <div className="flex h-[100dvh] bg-transparent overflow-hidden">
 
       {/* Sidebar - Fixed on desktop, sliding on mobile */}
       <Sidebar

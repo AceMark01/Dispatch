@@ -75,10 +75,10 @@ const Login = () => {
   // Demo credentials removed
 
   return (
-    <div className="h-[100dvh] overflow-hidden w-full flex flex-col bg-gradient-to-br from-sky-50 to-sky-100">
+    <div className="h-[100dvh] overflow-hidden w-full flex flex-col bg-gradient-to-br from-indigo-100 via-sky-50 to-violet-100">
       {/* Center Content */}
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+        <div className="w-full max-w-md glass-strong rounded-3xl shadow-2xl p-8 space-y-6">
 
           <div className="flex flex-col items-center space-y-2">
             <div className="text-center space-y-2">
@@ -148,7 +148,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={submitting}
-              className={`w-full py-3 px-4 text-base font-semibold bg-sky-600 text-white rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-600 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : ''
+              className={`w-full py-3 px-4 text-base font-semibold bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-lg hover:from-sky-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-600 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
             >
               {submitting ? (

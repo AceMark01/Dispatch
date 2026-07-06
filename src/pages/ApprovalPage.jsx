@@ -114,13 +114,13 @@ const ApprovalPage = () => {
           <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
             <button
               onClick={() => { setActiveTab('Pending'); setSelectedIds([]); }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Pending' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Pending' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
             >
               Pending ({pendingItems.length})
             </button>
             <button
               onClick={() => { setActiveTab('History'); setSelectedIds([]); }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'History' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'History' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
             >
               History
             </button>
@@ -231,7 +231,7 @@ const ApprovalPage = () => {
             <div className="flex gap-2">
               <button
                 onClick={handleBulkSubmit}
-                className="px-6 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors uppercase tracking-wider"
+                className="px-6 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-700 transition-colors uppercase tracking-wider"
               >
                 Submit
               </button>
@@ -241,7 +241,7 @@ const ApprovalPage = () => {
       </div>
 
       {/* Table Container with pagination */}
-      <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 glass-strong rounded-2xl overflow-hidden flex flex-col">
         {/* Mobile View: Cards */}
         <div className="md:hidden flex flex-col gap-3 p-3 overflow-y-auto flex-1 bg-slate-50/50">
           {activeTab === 'Pending' && paginatedItems.length > 0 && (
@@ -336,7 +336,7 @@ const ApprovalPage = () => {
                       </select>
                       <button
                         onClick={() => handleAction(item.id, rowEdits[item.id]?.status ?? 'Approved')}
-                        className={`p-2 text-white rounded-lg ${(rowEdits[item.id]?.status ?? 'Approved') === 'Approved' ? 'bg-emerald-600' : 'bg-red-600'}`}
+                        className={`p-2 text-white rounded-lg ${(rowEdits[item.id]?.status ?? 'Approved') === 'Approved' ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}
                       >
                         <Check size={14} />
                       </button>
@@ -436,8 +436,8 @@ const ApprovalPage = () => {
                           <button
                             onClick={() => handleAction(item.id, rowEdits[item.id]?.status ?? 'Approved')}
                             className={`p-1.5 text-white rounded-lg transition-all shadow-sm ${(rowEdits[item.id]?.status ?? 'Approved') === 'Approved'
-                                ? 'bg-emerald-600 hover:bg-emerald-700'
-                                : 'bg-red-600 hover:bg-red-700'
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700'
+                                : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'
                               }`}
                           >
                             <Check size={14} />

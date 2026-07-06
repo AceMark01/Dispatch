@@ -6,7 +6,7 @@ const Header = ({ onMenuClick, user }) => {
   const { fetchFromSheet, isLoading } = useDispatchStore();
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-sky-200">
+    <header className="sticky top-0 z-30 glass border-b border-white/40">
       <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
 
         {/* Left Section: Mobile Menu & Search */}

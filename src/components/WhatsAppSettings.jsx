@@ -73,7 +73,7 @@ const WhatsAppSettings = () => {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg text-xs font-bold hover:from-emerald-600 hover:to-teal-700 shadow-sm transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Save size={14} /> {saving ? 'Saving...' : 'Save Settings'}
         </button>

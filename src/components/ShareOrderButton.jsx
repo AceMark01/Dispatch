@@ -85,7 +85,7 @@ const ShareOrderButton = ({ items = [], label = 'Share' }) => {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 text-xs font-bold hover:bg-blue-700 shadow-sm transition-all"
+        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg flex items-center gap-2 text-xs font-bold hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all"
       >
         <Share2 size={16} /> {label}
       </button>

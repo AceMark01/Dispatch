@@ -42,12 +42,12 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full w-56 bg-white border-r border-sky-200 z-[70] transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed top-0 left-0 h-full w-56 glass-strong border-r border-white/50 z-[70] transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Logo Section */}
-          <div className="p-6 border-b border-sky-200 flex items-center justify-between">
+          <div className="p-6 border-b border-white/40 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg flex items-center justify-center">
                 <Users size={20} className="text-white" />
               </div>
               <span className="text-xl font-bold text-sky-600 tracking-tight">Dispatch</span>
@@ -115,7 +115,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           </nav>
 
           {/* User Profile Section */}
-          <div className="p-4 border-t border-sky-200 bg-sky-50">
+          <div className="p-4 border-t border-white/40 bg-white/20">
             <button
               onClick={handleLogout}
               className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white transition-all font-semibold shadow-sm"

@@ -71,13 +71,13 @@ const ApprovedPage = () => {
         <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
           <button
             onClick={() => setActiveTab('Approved')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Approved' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Approved' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
           >
             Approved ({approvedCount})
           </button>
           <button
             onClick={() => setActiveTab('Rejected')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Rejected' ? 'bg-red-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Rejected' ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
           >
             Rejected ({rejectedCount})
           </button>
@@ -133,7 +133,7 @@ const ApprovedPage = () => {
       </div>
 
       {/* Table Container */}
-      <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div className="flex-1 glass-strong rounded-2xl overflow-hidden flex flex-col">
         {/* Mobile View: Cards */}
         <div className="md:hidden flex flex-col gap-3 p-3 overflow-y-auto flex-1 bg-slate-50/50">
           {paginatedItems.map((rawItem) => {
