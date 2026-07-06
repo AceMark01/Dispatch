@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
 import { sendWhatsApp } from '../utils/api';
 import { useSettingsStore } from '../store/settingsStore';
+import ShareOrderButton from '../components/ShareOrderButton';
 
 const UploadReport = () => {
   const { items, addItems, backendItems, fetchBackendData } = useDispatchStore();
@@ -448,9 +449,9 @@ const UploadReport = () => {
       {/* Master Data Header Info */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col max-h-[600px] mt-4">
         <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-slate-800">Master Report ({items.length} records)</h3>
-            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider bg-slate-200 px-2 py-1 rounded-md">Inventory Status</div>
+            <ShareOrderButton items={filteredItems.map(enrichItem)} label="Share PDF" />
           </div>
 
           <div className="flex gap-4">

@@ -227,36 +227,83 @@ const ApprovalPage = () => {
       <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         {/* Mobile View: Cards */}
         <div className="md:hidden flex flex-col gap-3 p-3 overflow-y-auto flex-1 bg-slate-50/50">
+          {activeTab === 'Pending' && paginatedItems.length > 0 && (
+            <label className="flex items-center justify-between gap-2 bg-white px-3 py-2.5 rounded-lg border border-slate-200 shadow-sm cursor-pointer sticky top-0 z-10">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.length === paginatedItems.length && paginatedItems.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs font-bold text-slate-700">Select All ({paginatedItems.length})</span>
+              </div>
+              {selectedIds.length > 0 && (
+                <span className="text-[10px] font-bold text-blue-600">{selectedIds.length} selected</span>
+              )}
+            </label>
+          )}
           {paginatedItems.map((rawItem) => {
             const item = enrichItem(rawItem);
             return (
-            <div key={item.id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-2">
-              <div className="flex justify-between items-start">
-                <div className="flex gap-3">
+            <div
+              key={item.id}
+              onClick={() => activeTab === 'Pending' && toggleSelect(item.id)}
+              className={`bg-white p-3 rounded-xl border shadow-sm flex flex-col gap-3 transition-all ${selectedIds.includes(item.id) ? 'border-blue-300 ring-1 ring-blue-200' : 'border-slate-200'}`}
+            >
+              {/* Top: Item Name (left) + Order Qty (right) */}
+              <div className="flex justify-between items-start gap-3">
+                <div className="flex gap-2 min-w-0">
                   {activeTab === 'Pending' && (
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(item.id)}
                       onChange={() => toggleSelect(item.id)}
-                      className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 shrink-0"
                     />
                   )}
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.item}</span>
-                    <h3 className="font-bold text-slate-800 text-sm">{item.itemName}</h3>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-800 text-sm leading-snug">{item.itemName}</h3>
+                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">#{item.serialNo}</p>
                   </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[9px] text-blue-500 uppercase font-bold">Order Qty</p>
+                  <p className="text-2xl font-black text-blue-600 leading-none">{item.orderQty}</p>
                 </div>
               </div>
 
-              {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
-                <div className="grid grid-cols-2 gap-3 mt-1 animate-in zoom-in-95">
+              {/* Details grid: Shelf Qty, MOQ, Current Stock, Reorder Level */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-slate-50 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Shelf Qty</span>
+                  <span className="text-xs font-bold text-slate-700">{item.shelf1}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">MOQ</span>
+                  <span className="text-xs font-bold text-slate-700">{item.moq}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Current Stock</span>
+                  <span className="text-xs font-bold text-slate-700">{currentStock(item.qty)} <span className="text-[9px] text-slate-400">{item.unit}</span></span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Reorder Level</span>
+                  <span className="text-xs font-bold text-slate-700">{item.roiQty}</span>
+                </div>
+              </div>
+
+              {/* Pending: edit controls when selected, else a tap hint */}
+              {activeTab === 'Pending' && (selectedIds.includes(item.id) ? (
+                <div className="grid grid-cols-2 gap-2 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
                   <div>
                     <label className="text-[9px] font-bold text-slate-400 uppercase">Order Qty</label>
                     <input
                       type="number"
                       value={rowEdits[item.id]?.orderQty ?? item.orderQty}
                       onChange={(e) => handleRowEdit(item.id, 'orderQty', e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-blue-300 rounded font-black text-blue-600 focus:ring-1 focus:ring-blue-500 outline-none"
+                      className="w-full px-2 py-1.5 text-sm border border-blue-300 rounded-lg font-black text-blue-600 focus:ring-1 focus:ring-blue-500 outline-none"
                     />
                   </div>
                   <div>
@@ -265,62 +312,39 @@ const ApprovalPage = () => {
                       <select
                         value={rowEdits[item.id]?.status ?? 'Approved'}
                         onChange={(e) => handleRowEdit(item.id, 'status', e.target.value)}
-                        className={`flex-1 px-2 py-1 text-xs border rounded font-bold transition-all ${(rowEdits[item.id]?.status ?? 'Approved') === 'Approved'
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-red-50 border-red-200 text-red-700'
-                          }`}
+                        className={`flex-1 px-2 py-1.5 text-xs border rounded-lg font-bold ${(rowEdits[item.id]?.status ?? 'Approved') === 'Approved' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}
                       >
                         <option value="Approved">Accept</option>
                         <option value="Rejected">Reject</option>
                       </select>
                       <button
                         onClick={() => handleAction(item.id, rowEdits[item.id]?.status ?? 'Approved')}
-                        className={`p-1 text-white rounded transition-all ${(rowEdits[item.id]?.status ?? 'Approved') === 'Approved'
-                            ? 'bg-emerald-600'
-                            : 'bg-red-600'
-                          }`}
+                        className={`p-2 text-white rounded-lg ${(rowEdits[item.id]?.status ?? 'Approved') === 'Approved' ? 'bg-emerald-600' : 'bg-red-600'}`}
                       >
-                        <Check size={12} />
+                        <Check size={14} />
                       </button>
                     </div>
                   </div>
                 </div>
-              ) : activeTab === 'Pending' && (
-                <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg mt-1 border border-dashed border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-medium italic">Select row to edit details</span>
+              ) : (
+                <div className="flex justify-center items-center gap-2 bg-slate-50 py-2 rounded-lg border border-dashed border-slate-200">
                   <MousePointer2 size={12} className="text-slate-300" />
+                  <span className="text-[10px] text-slate-500 font-medium italic">Tap to edit &amp; confirm</span>
                 </div>
-              )}
+              ))}
 
-              <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-100 mt-1">
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Group</p>
-                  <p className="text-xs font-semibold text-slate-600">{item.group}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">SN</p>
-                  <p className="text-xs font-medium text-slate-500">#{item.serialNo}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Reorder Level</p>
-                  <p className="text-xs font-semibold text-slate-600">{item.roiQty}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Shelf Qty</p>
-                  <p className="text-xs font-semibold text-slate-600">{item.shelf1}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">MOQ</p>
-                  <p className="text-xs font-semibold text-slate-600">{item.moq}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Current Stock</p>
-                  <p className="text-xs font-bold text-slate-800">{currentStock(item.qty)} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span></p>
-                </div>
-                <div className="col-span-3 text-right bg-blue-50 rounded-lg p-1.5 border border-blue-100">
-                  <p className="text-[9px] text-blue-400 uppercase font-bold">Order Qty</p>
-                  <p className="text-sm font-black text-blue-600">{item.orderQty}</p>
-                </div>
+              {/* Footer: status (History) + upload date (blue glass pill) */}
+              <div className="flex justify-between items-center border-t border-slate-100 pt-2">
+                {activeTab === 'History' ? (
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${item.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' : item.status === 'Rejected' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                    {item.status === 'Waiting for Approval' ? 'Pending' : item.status}
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Uploaded</span>
+                )}
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 border border-blue-300/40 backdrop-blur-sm shadow-sm">
+                  {new Date(item.uploadedAt).toLocaleDateString()}
+                </span>
               </div>
             </div>
             );

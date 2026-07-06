@@ -139,42 +139,45 @@ const ApprovedPage = () => {
           {paginatedItems.map((rawItem) => {
             const item = enrich(rawItem);
             return (
-            <div key={item.id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.item}</span>
-                  <h3 className="font-bold text-slate-800 text-sm">{item.itemName}</h3>
+            <div key={item.id} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+              {/* Top: Item Name (left) + Order Qty (right) */}
+              <div className="flex justify-between items-start gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-800 text-sm leading-snug">{item.itemName}</h3>
+                  <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">#{item.serialNo}</p>
                 </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[9px] text-blue-500 uppercase font-bold">Order Qty</p>
+                  <p className="text-2xl font-black text-blue-600 leading-none">{item.orderQty}</p>
+                </div>
+              </div>
+
+              {/* Details grid: Shelf Qty, MOQ, Current Stock, Reorder Level */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-slate-50 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Shelf Qty</span>
+                  <span className="text-xs font-bold text-slate-700">{item.shelf1}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">MOQ</span>
+                  <span className="text-xs font-bold text-slate-700">{item.moq}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Current Stock</span>
+                  <span className="text-xs font-bold text-slate-700">{currentStock(item.qty)} <span className="text-[9px] text-slate-400">{item.unit}</span></span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Reorder Level</span>
+                  <span className="text-xs font-bold text-slate-700">{item.roiQty}</span>
+                </div>
+              </div>
+
+              {/* Footer: status + upload date (blue glass pill) */}
+              <div className="flex justify-between items-center border-t border-slate-100 pt-2">
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase ${isRejected ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{activeTab}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-2 border-t border-slate-100 mt-1">
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Group</p>
-                  <p className="text-xs font-semibold text-slate-600">{item.group}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">SN</p>
-                  <p className="text-xs font-medium text-slate-500">#{item.serialNo}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Reorder Level</p>
-                  <p className="text-xs font-semibold text-slate-600">{item.roiQty}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Shelf Qty</p>
-                  <p className="text-xs font-semibold text-slate-600">{item.shelf1}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-slate-400 uppercase font-bold">Current Stock</p>
-                  <p className="text-xs font-bold text-slate-800">{currentStock(item.qty)} <span className="text-[10px] text-slate-500 uppercase">{item.unit}</span></p>
-                </div>
-                <div className="col-span-3 text-right bg-blue-50 rounded-lg p-1.5 border border-blue-100">
-                  <p className="text-[9px] text-blue-400 uppercase font-bold">Order Qty</p>
-                  <p className="text-sm font-black text-blue-600">{item.orderQty}</p>
-                </div>
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium border-t border-slate-100 pt-2">
-                {activeTab}: {formatDateTime(item.approvedAt || item.actual1)}
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 border border-blue-300/40 backdrop-blur-sm shadow-sm">
+                  {new Date(item.uploadedAt).toLocaleDateString()}
+                </span>
               </div>
             </div>
             );
