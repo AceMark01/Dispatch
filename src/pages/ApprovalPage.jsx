@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
-import { Check, X, Search, Filter, History, MousePointer2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
 import ShareOrderButton from '../components/ShareOrderButton';
@@ -14,8 +14,9 @@ const ApprovalPage = () => {
   const [filterGroup, setFilterGroup] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  // Desktop column visibility (toggleable via the Columns dropdown) — hidden by default
+  const [visibleCols, setVisibleCols] = useState({ group: false, item: false, moq: false, unit: false });
+  const [showColMenu, setShowColMenu] = useState(false);
 
   // Load Backend master sheet so we can map Item Code / Group / MOQ + Order Qty
   useEffect(() => {
@@ -38,15 +39,9 @@ const ApprovalPage = () => {
     return matchesSearch && matchesGroup && matchesStatus;
   });
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+  // No pagination — show all items (the table scrolls)
+  const paginatedItems = filteredItems;
 
-  // Reset to page 1 when filters or search changes
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [search, filterGroup, filterStatus, activeTab]);
 
   const groups = ['All', ...new Set(items.map(item => item.group))];
   const statuses = ['All', 'Waiting for Approval', 'Approved', 'Rejected'];
@@ -110,15 +105,6 @@ const ApprovalPage = () => {
     );
   };
 
-  const goToPage = (page) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-    // Scroll to top of table
-    const tableContainer = document.querySelector('.table-container');
-    if (tableContainer) {
-      tableContainer.scrollTop = 0;
-    }
-  };
-
   return (
     <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
       <div className="flex justify-between items-center flex-wrap gap-3">
@@ -164,6 +150,32 @@ const ApprovalPage = () => {
           >
             <Filter size={18} /> Filter
           </button>
+
+          {/* Columns visibility (desktop) */}
+          <div className="relative hidden md:block">
+            <button
+              onClick={() => setShowColMenu(!showColMenu)}
+              className="px-4 py-2 border border-slate-200 rounded-xl flex items-center gap-2 transition-all shadow-sm bg-white text-slate-600 hover:bg-slate-50"
+            >
+              <SlidersHorizontal size={18} /> Columns
+            </button>
+            {showColMenu && (
+              <div className="absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-lg p-2 z-30 animate-in fade-in slide-in-from-top-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase px-2 py-1">Show columns</p>
+                {[['group', 'Group'], ['item', 'Item Code'], ['moq', 'MOQ'], ['unit', 'Unit']].map(([key, lbl]) => (
+                  <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={visibleCols[key]}
+                      onChange={() => setVisibleCols(v => ({ ...v, [key]: !v[key] }))}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-xs font-medium text-slate-700">{lbl}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Expanded Filter Panel */}
@@ -377,14 +389,14 @@ const ApprovalPage = () => {
                 <th className="px-4 py-3 w-16 text-center">SN</th>
                 {activeTab === 'Pending' && <th className="px-4 py-3 w-40 text-center">Action</th>}
                 <th className="px-4 py-3">Item Name</th>
-                <th className="px-4 py-3">Group</th>
-                <th className="px-4 py-3">Item Code</th>
+                {visibleCols.group && <th className="px-4 py-3">Group</th>}
+                {visibleCols.item && <th className="px-4 py-3">Item Code</th>}
                 <th className="px-4 py-3 w-24 text-right">Reorder Level</th>
                 <th className="px-4 py-3">Shelf Qty</th>
                 <th className="px-4 py-3 w-24 text-right">Current Stock</th>
-                <th className="px-4 py-3 w-20 text-right">MOQ</th>
+                {visibleCols.moq && <th className="px-4 py-3 w-20 text-right">MOQ</th>}
                 <th className="px-4 py-3 w-24 text-right">Order Qty</th>
-                <th className="px-4 py-3 w-16 text-center">Unit</th>
+                {visibleCols.unit && <th className="px-4 py-3 w-16 text-center">Unit</th>}
                 {activeTab === 'History' && <th className="px-4 py-3 text-center w-32">Date</th>}
               </tr>
             </thead>
@@ -440,13 +452,13 @@ const ApprovalPage = () => {
                   )}
 
                   <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
-                  <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
-                  <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>
+                  {visibleCols.group && <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>}
+                  {visibleCols.item && <td className="px-4 py-3 text-[10px] text-slate-500 font-mono uppercase">{item.item}</td>}
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
                   <td className="px-4 py-3 text-[10px] font-bold text-slate-500">{item.shelf1}</td>
 
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{currentStock(item.qty)}</td>
-                  <td className="px-4 py-3 text-right font-bold text-slate-600">{item.moq}</td>
+                  {visibleCols.moq && <td className="px-4 py-3 text-right font-bold text-slate-600">{item.moq}</td>}
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     {activeTab === 'Pending' && selectedIds.includes(item.id) ? (
                       <input
@@ -459,9 +471,11 @@ const ApprovalPage = () => {
                       <span className="font-black text-blue-600">{item.orderQty}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">
-                    {item.unit}
-                  </td>
+                  {visibleCols.unit && (
+                    <td className="px-4 py-3 text-center text-[10px] font-bold text-slate-500 uppercase">
+                      {item.unit}
+                    </td>
+                  )}
 
                   {activeTab === 'History' && (
                     <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium">
@@ -479,68 +493,6 @@ const ApprovalPage = () => {
             </div>
           )}
         </div>
-
-        {/* Pagination Component */}
-        {filteredItems.length > itemsPerPage && (
-          <div className="border-t border-slate-200 bg-white px-4 py-3 flex items-center justify-between">
-            <div className="text-xs text-slate-500">
-              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredItems.length)} of {filteredItems.length} items
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${currentPage === 1
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-              >
-                <ChevronLeft size={14} /> Previous
-              </button>
-
-              <div className="flex gap-1">
-                {(() => {
-                  const pages = [];
-                  const maxVisible = 5;
-                  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-                  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-                  if (endPage - startPage + 1 < maxVisible) {
-                    startPage = Math.max(1, endPage - maxVisible + 1);
-                  }
-
-                  for (let i = startPage; i <= endPage; i++) {
-                    pages.push(i);
-                  }
-
-                  return pages.map(page => (
-                    <button
-                      key={page}
-                      onClick={() => goToPage(page)}
-                      className={`w-8 h-8 rounded-lg text-xs font-medium transition-all ${currentPage === page
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ));
-                })()}
-              </div>
-
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${currentPage === totalPages
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-              >
-                Next <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
