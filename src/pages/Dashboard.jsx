@@ -59,6 +59,7 @@ const Dashboard = () => {
     }
     if (selectedItemName && selectedItemName !== 'All' && item.itemName !== selectedItemName) return false;
     if (selectedStatus && selectedStatus !== 'All' && item.status !== selectedStatus) return false;
+    if (parseNum(item.orderQty) <= 0) return false; // hide items that don't need ordering (Order Qty = 0)
     return true;
   }), [enriched, startDate, endDate, selectedItemName, selectedStatus]);
 

@@ -33,7 +33,8 @@ const ApprovalPage = () => {
       i.serialNo?.toString().includes(search);
     const matchesGroup = filterGroup === 'All' || i.group === filterGroup;
     const matchesStatus = filterStatus === 'All' || i.status === filterStatus;
-    return matchesSearch && matchesGroup && matchesStatus;
+    // Hide items that don't need ordering (Order Qty = 0)
+    return matchesSearch && matchesGroup && matchesStatus && enrichItem(i).orderQty > 0;
   });
 
   // Pagination logic

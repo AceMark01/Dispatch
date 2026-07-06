@@ -16,12 +16,12 @@ const ApprovedPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const approvedCount = items.filter(i => i.status === 'Approved').length;
-  const rejectedCount = items.filter(i => i.status === 'Rejected').length;
+  const approvedCount = items.filter(i => i.status === 'Approved' && enrich(i).orderQty > 0).length;
+  const rejectedCount = items.filter(i => i.status === 'Rejected' && enrich(i).orderQty > 0).length;
   const isRejected = activeTab === 'Rejected';
 
-  // Items for the active tab (Approved or Rejected)
-  const shownItems = items.filter(i => i.status === activeTab);
+  // Items for the active tab (Approved or Rejected); hide items with Order Qty = 0
+  const shownItems = items.filter(i => i.status === activeTab && enrich(i).orderQty > 0);
 
   const filteredItems = shownItems.filter(i => {
     const matchesSearch = (i.itemName || '').toLowerCase().includes(search.toLowerCase()) ||

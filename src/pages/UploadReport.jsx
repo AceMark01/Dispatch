@@ -67,7 +67,8 @@ const UploadReport = () => {
       i.item?.toLowerCase().includes(search.toLowerCase()) ||
       i.serialNo?.toString().includes(search);
     const matchesGroup = filterGroup === 'All' || i.group === filterGroup;
-    return matchesSearch && matchesGroup;
+    // Hide items that don't need ordering (Order Qty = 0)
+    return matchesSearch && matchesGroup && enrichItem(i).orderQty > 0;
   });
 
   const groups = ['All', ...new Set(items.map(item => item.group))];
