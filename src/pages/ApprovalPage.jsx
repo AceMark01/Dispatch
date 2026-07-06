@@ -23,8 +23,9 @@ const ApprovalPage = () => {
   const backendMap = useMemo(() => buildBackendMap(backendItems), [backendItems]);
   const enrichItem = (item) => enrichWithBackend(item, backendMap);
 
-  const pendingItems = items.filter(i => i.planned1 && !i.actual1);
-  const historyItems = items.filter(i => i.planned1 && i.actual1);
+  // Only items that need ordering (Order Qty > 0) are shown — tab counts match too
+  const pendingItems = items.filter(i => i.planned1 && !i.actual1 && enrichItem(i).orderQty > 0);
+  const historyItems = items.filter(i => i.planned1 && i.actual1 && enrichItem(i).orderQty > 0);
   const displayItems = activeTab === 'Pending' ? pendingItems : historyItems;
 
   const filteredItems = displayItems.filter(i => {
@@ -33,8 +34,7 @@ const ApprovalPage = () => {
       i.serialNo?.toString().includes(search);
     const matchesGroup = filterGroup === 'All' || i.group === filterGroup;
     const matchesStatus = filterStatus === 'All' || i.status === filterStatus;
-    // Hide items that don't need ordering (Order Qty = 0)
-    return matchesSearch && matchesGroup && matchesStatus && enrichItem(i).orderQty > 0;
+    return matchesSearch && matchesGroup && matchesStatus;
   });
 
   // Pagination logic

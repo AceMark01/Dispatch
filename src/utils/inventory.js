@@ -40,15 +40,22 @@ export const buildBackendMap = (backendItems) => {
 // Enrich an item with Backend data (Item Code / Group / MOQ) + Order Qty.
 // If the item has a manual override (orderQtyManual, e.g. edited on the Confirm
 // order screen) that value wins; otherwise Order Qty is auto-calculated.
+// Use the item's own value if it has one, otherwise fall back to the Backend master.
+const pick = (own, fallback) =>
+  (own !== undefined && own !== null && String(own).trim() !== '') ? own : (fallback ?? '');
+
 export const enrichItem = (item, backendMap) => {
   const match = backendMap?.get(normalizeName(item.itemName));
   const hasCode = item.item && item.item !== 'N/A' && item.item !== '';
   const itemCode = hasCode ? item.item : (match?.itemCode || '');
   const group = match?.group || item.group;
-  const moq = item.moq ?? match?.moq ?? '';
+  const moq = pick(item.moq, match?.moq);
+  // Reorder Level & Shelf Qty: from the CSV if present, else from the Backend master
+  const roiQty = pick(item.roiQty, match?.reorderLevel);
+  const shelf1 = pick(item.shelf1, match?.shelfQty);
   const hasManualOrder = item.orderQtyManual !== undefined && item.orderQtyManual !== null && item.orderQtyManual !== '';
   const orderQty = hasManualOrder
     ? parseNum(item.orderQtyManual)
-    : computeOrderQty(item.roiQty, item.shelf1, item.qty, moq);
-  return { ...item, item: itemCode, group, moq, orderQty };
+    : computeOrderQty(roiQty, shelf1, item.qty, moq);
+  return { ...item, item: itemCode, group, moq, roiQty, shelf1, orderQty };
 };

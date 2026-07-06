@@ -341,7 +341,8 @@ export const useDispatchStore = create(
         }
       },
 
-      // Fetch the Backend master sheet (Item Name | Group | Item Code | MOQ)
+      // Fetch the Backend master sheet
+      // Columns: A Item Name | B Group | C Item Code | D MOQ | E Reorder Level | F Shelf Qty
       // Header is at row 1, data starts at row 2.
       fetchBackendData: async () => {
         try {
@@ -353,6 +354,8 @@ export const useDispatchStore = create(
               group: (r[1] || '').toString().trim(),
               itemCode: (r[2] || '').toString().trim(),
               moq: (r[3] || '').toString().trim(),
+              reorderLevel: (r[4] || '').toString().trim(),
+              shelfQty: (r[5] || '').toString().trim(),
             })).filter(b => b.itemName);
             set({ backendItems });
           }
