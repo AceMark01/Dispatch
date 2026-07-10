@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
-import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal } from 'lucide-react';
+import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal, Calendar, ChevronRight, ChevronLeft, PartyPopper } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
 import ShareOrderButton from '../components/ShareOrderButton';
@@ -17,6 +17,10 @@ const ApprovalPage = () => {
   // Desktop column visibility (toggleable via the Columns dropdown) — hidden by default
   const [visibleCols, setVisibleCols] = useState({ group: false, item: false, moq: false, unit: false });
   const [showColMenu, setShowColMenu] = useState(false);
+  // Party date-based confirm flow
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitCount, setSubmitCount] = useState(0);
 
   // Load Backend master sheet so we can map Item Code / Group / MOQ + Order Qty
   useEffect(() => {
@@ -105,21 +109,60 @@ const ApprovalPage = () => {
     );
   };
 
+  // ===== Party date-based confirm flow =====
+  const fmtDate = (d) => {
+    const dt = new Date(d);
+    return isNaN(dt.getTime()) ? 'Unknown date' : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  // Group pending items by their upload date (most recent first)
+  const pendingByDate = (() => {
+    const map = new Map();
+    pendingItems.forEach(i => {
+      const key = fmtDate(i.uploadedAt);
+      if (!map.has(key)) map.set(key, { date: key, ts: new Date(i.uploadedAt).getTime() || 0, items: [] });
+      map.get(key).items.push(i);
+    });
+    return [...map.values()].sort((a, b) => b.ts - a.ts);
+  })();
+
+  const dateItems = selectedDate ? pendingItems.filter(i => fmtDate(i.uploadedAt) === selectedDate) : [];
+
+  const openDate = (date) => {
+    setSelectedDate(date);
+    // select all of that date's items by default
+    setSelectedIds(pendingItems.filter(i => fmtDate(i.uploadedAt) === date).map(i => i.id));
+  };
+
+  const resetFlow = () => { setSubmitted(false); setSelectedDate(null); setSelectedIds([]); setRowEdits({}); };
+
+  const submitOrder = () => {
+    if (selectedIds.length === 0) { toast.error('Please select at least one item'); return; }
+    const count = selectedIds.length;
+    selectedIds.forEach(id => updateItemStatus(id, 'Approved', buildExtra(id, 'Approved')));
+    setSubmitCount(count);
+    setSelectedIds([]);
+    setRowEdits({});
+    setSubmitted(true);
+  };
+
   return (
     <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
       <div className="flex justify-between items-center flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-slate-800">Confirm order</h1>
         <div className="flex items-center gap-2 flex-wrap">
-          <ShareOrderButton items={filteredItems.map(enrichItem)} label="Share PDF" />
+          {(activeTab === 'History' || selectedDate) && (
+            <ShareOrderButton items={(activeTab === 'Pending' && selectedDate ? dateItems : filteredItems).map(enrichItem)} label="Share PDF" />
+          )}
           <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
             <button
-              onClick={() => { setActiveTab('Pending'); setSelectedIds([]); }}
+              onClick={() => { setActiveTab('Pending'); resetFlow(); }}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Pending' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
             >
               Pending ({pendingItems.length})
             </button>
             <button
-              onClick={() => { setActiveTab('History'); setSelectedIds([]); }}
+              onClick={() => { setActiveTab('History'); resetFlow(); }}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'History' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}
             >
               History
@@ -128,6 +171,118 @@ const ApprovalPage = () => {
         </div>
       </div>
 
+      {/* ===== Pending: party date-based confirm flow ===== */}
+      {activeTab === 'Pending' && submitted && (
+        <div className="flex-1 glass-strong rounded-2xl flex flex-col items-center justify-center text-center p-8 gap-4">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-in zoom-in duration-300">
+            <Check size={44} className="text-white" strokeWidth={3} />
+          </div>
+          <h2 className="text-3xl font-black text-slate-800 flex items-center gap-2">Thank You! <PartyPopper className="text-amber-500" size={28} /></h2>
+          <p className="text-slate-500 max-w-md">
+            Your order has been confirmed successfully. We've received <b className="text-emerald-600">{submitCount} item{submitCount > 1 ? 's' : ''}</b> and our team will process your dispatch shortly. 🙏
+          </p>
+          <button onClick={resetFlow} className="mt-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all">
+            Back to Dates
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'Pending' && !submitted && !selectedDate && (
+        <div className="flex-1 glass-strong rounded-2xl overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-white/40">
+            <h3 className="font-bold text-slate-800">Select an upload date to confirm</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Tap a date to review and submit that day's order.</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide">
+            {pendingByDate.length === 0 && (
+              <div className="py-16 text-center text-slate-400 text-sm">No pending orders to confirm right now 🎉</div>
+            )}
+            {pendingByDate.map(g => (
+              <button
+                key={g.date}
+                onClick={() => openDate(g.date)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600"><Calendar size={20} /></div>
+                  <div className="text-left">
+                    <p className="font-bold text-slate-800">{g.date}</p>
+                    <p className="text-[11px] text-slate-500">{g.items.length} item{g.items.length > 1 ? 's' : ''} to confirm</p>
+                  </div>
+                </div>
+                <ChevronRight className="text-slate-400 group-hover:text-blue-600 transition-colors" size={20} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'Pending' && !submitted && selectedDate && (
+        <div className="flex-1 glass-strong rounded-2xl overflow-hidden flex flex-col">
+          <div className="p-3 border-b border-white/40 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <button onClick={() => { setSelectedDate(null); setSelectedIds([]); }} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0"><ChevronLeft size={18} /></button>
+              <div className="min-w-0">
+                <h3 className="font-bold text-slate-800 flex items-center gap-1.5"><Calendar size={15} className="text-blue-600" /> {selectedDate}</h3>
+                <p className="text-[11px] text-slate-500">{selectedIds.length} of {dateItems.length} selected</p>
+              </div>
+            </div>
+            <button
+              onClick={submitOrder}
+              disabled={selectedIds.length === 0}
+              className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Check size={16} /> Submit Order ({selectedIds.length})
+            </button>
+          </div>
+          <label className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-white/40 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedIds.length === dateItems.length && dateItems.length > 0}
+              onChange={() => setSelectedIds(selectedIds.length === dateItems.length ? [] : dateItems.map(i => i.id))}
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-xs font-bold text-slate-700">Select All ({dateItems.length})</span>
+          </label>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide bg-slate-50/50">
+            {dateItems.map(rawItem => {
+              const item = enrichItem(rawItem);
+              const sel = selectedIds.includes(item.id);
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => toggleSelect(item.id)}
+                  className={`bg-white p-3 rounded-xl border shadow-sm cursor-pointer transition-all flex items-center gap-3 ${sel ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-slate-200'}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={sel}
+                    onChange={() => toggleSelect(item.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-slate-800 text-sm leading-snug">{item.itemName}</h3>
+                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">#{item.serialNo} · Stock {currentStock(item.qty)}</p>
+                  </div>
+                  <div className="text-right shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-[9px] text-blue-500 uppercase font-bold">Order Qty</p>
+                    <input
+                      type="number"
+                      value={rowEdits[item.id]?.orderQty ?? item.orderQty}
+                      onChange={(e) => handleRowEdit(item.id, 'orderQty', e.target.value)}
+                      className="w-20 px-2 py-1 border border-blue-200 rounded-lg font-black text-blue-600 text-right text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'History' && (
+      <>
       {/* Filters & Bulk Actions */}
       <div className="flex flex-col gap-3">
         <div className="flex gap-4">
@@ -494,6 +649,8 @@ const ApprovalPage = () => {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
