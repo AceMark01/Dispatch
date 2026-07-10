@@ -4,6 +4,7 @@ import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal, Ca
 import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
 import ShareOrderButton from '../components/ShareOrderButton';
+import FeedbackForm from '../components/FeedbackForm';
 
 const ApprovalPage = () => {
   const { items, updateItemStatus, backendItems, fetchBackendData } = useDispatchStore();
@@ -182,7 +183,7 @@ const ApprovalPage = () => {
 
       {/* ===== Pending: party date-based confirm flow ===== */}
       {activeTab === 'Pending' && submitted && (
-        <div className="flex-1 glass-strong rounded-2xl flex flex-col items-center justify-center text-center p-8 gap-4">
+        <div className="flex-1 glass-strong rounded-2xl overflow-y-auto flex flex-col items-center text-center p-8 gap-4">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-in zoom-in duration-300">
             <Check size={44} className="text-white" strokeWidth={3} />
           </div>
@@ -190,6 +191,13 @@ const ApprovalPage = () => {
           <p className="text-slate-500 max-w-md">
             Your order has been confirmed successfully. We've received <b className="text-emerald-600">{submitCount} item{submitCount > 1 ? 's' : ''}</b> and our team will process your dispatch shortly. 🙏
           </p>
+
+          {/* Rate your experience — feedback captured right after confirming */}
+          <div className="w-full max-w-md mt-2 pt-5 border-t border-slate-200/70">
+            <p className="text-lg font-bold text-slate-800 mb-3">How was your experience?</p>
+            <FeedbackForm source="Order Confirm" compact />
+          </div>
+
           <button onClick={resetFlow} className="mt-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all">
             Back to Dates
           </button>

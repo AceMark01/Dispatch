@@ -8,6 +8,7 @@ import UploadReport from './pages/UploadReport';
 import ApprovalPage from './pages/ApprovalPage';
 import ApprovedPage from './pages/ApprovedPage';
 import Setting from './pages/Setting';
+import FeedbackPage from './pages/FeedbackPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RequireAccess, { HomeRedirect } from './components/RequireAccess';
 
@@ -18,7 +19,8 @@ function App() {
         <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
         <Routes>
           <Route path="/login" element={<Login />} />
-          
+          <Route path="/feedback" element={<FeedbackPage />} />
+
           <Route path="/" element={
             <ProtectedRoute>
               <Layout />
