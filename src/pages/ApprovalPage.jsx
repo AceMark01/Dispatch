@@ -235,7 +235,7 @@ const ApprovalPage = () => {
               <Check size={16} /> Submit Order ({selectedIds.length})
             </button>
           </div>
-          <label className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-white/40 cursor-pointer">
+          <label className="md:hidden flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-white/40 cursor-pointer">
             <input
               type="checkbox"
               checked={selectedIds.length === dateItems.length && dateItems.length > 0}
@@ -244,7 +244,9 @@ const ApprovalPage = () => {
             />
             <span className="text-xs font-bold text-slate-700">Select All ({dateItems.length})</span>
           </label>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide bg-slate-50/50">
+
+          {/* Mobile: cards */}
+          <div className="md:hidden flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide bg-slate-50/50">
             {dateItems.map(rawItem => {
               const item = enrichItem(rawItem);
               const sel = selectedIds.includes(item.id);
@@ -252,31 +254,105 @@ const ApprovalPage = () => {
                 <div
                   key={item.id}
                   onClick={() => toggleSelect(item.id)}
-                  className={`bg-white p-3 rounded-xl border shadow-sm cursor-pointer transition-all flex items-center gap-3 ${sel ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-slate-200'}`}
+                  className={`bg-white p-3 rounded-xl border shadow-sm cursor-pointer transition-all flex flex-col gap-2 ${sel ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-slate-200'}`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={sel}
-                    onChange={() => toggleSelect(item.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-slate-800 text-sm leading-snug">{item.itemName}</h3>
-                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">#{item.serialNo} · Stock {currentStock(item.qty)}</p>
-                  </div>
-                  <div className="text-right shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <p className="text-[9px] text-blue-500 uppercase font-bold">Order Qty</p>
+                  {/* Top: checkbox + name + Order Qty */}
+                  <div className="flex items-center gap-3">
                     <input
-                      type="number"
-                      value={rowEdits[item.id]?.orderQty ?? item.orderQty}
-                      onChange={(e) => handleRowEdit(item.id, 'orderQty', e.target.value)}
-                      className="w-20 px-2 py-1 border border-blue-200 rounded-lg font-black text-blue-600 text-right text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                      type="checkbox"
+                      checked={sel}
+                      onChange={() => toggleSelect(item.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 shrink-0"
                     />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-slate-800 text-sm leading-snug">{item.itemName}</h3>
+                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">#{item.serialNo}</p>
+                    </div>
+                    <div className="text-right shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <p className="text-[9px] text-blue-500 uppercase font-bold">Order Qty</p>
+                      <input
+                        type="number"
+                        value={rowEdits[item.id]?.orderQty ?? item.orderQty}
+                        onChange={(e) => handleRowEdit(item.id, 'orderQty', e.target.value)}
+                        className="w-20 px-2 py-1 border border-blue-200 rounded-lg font-black text-blue-600 text-right text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 bg-slate-50 rounded-lg p-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold">Reorder Level</span>
+                      <span className="text-xs font-bold text-slate-700">{item.roiQty}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold">Shelf Qty</span>
+                      <span className="text-xs font-bold text-slate-700">{item.shelf1}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold">MOQ</span>
+                      <span className="text-xs font-bold text-slate-700">{item.moq}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-500 uppercase font-bold">Current Stock</span>
+                      <span className="text-xs font-bold text-slate-700">{currentStock(item.qty)} <span className="text-[9px] text-slate-400">{item.unit}</span></span>
+                    </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block flex-1 overflow-y-auto scrollbar-hide">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+              <thead className="sticky top-0 bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider z-10 border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === dateItems.length && dateItems.length > 0}
+                      onChange={() => setSelectedIds(selectedIds.length === dateItems.length ? [] : dateItems.map(i => i.id))}
+                      className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                  </th>
+                  <th className="px-4 py-3 w-16 text-center">SN</th>
+                  <th className="px-4 py-3">Item Name</th>
+                  <th className="px-4 py-3 w-28 text-right">Reorder Level</th>
+                  <th className="px-4 py-3 w-24 text-right">Shelf Qty</th>
+                  <th className="px-4 py-3 w-20 text-right">MOQ</th>
+                  <th className="px-4 py-3 w-28 text-right">Current Stock</th>
+                  <th className="px-4 py-3 w-28 text-right">Order Qty</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-[12px]">
+                {dateItems.map(rawItem => {
+                  const item = enrichItem(rawItem);
+                  const sel = selectedIds.includes(item.id);
+                  return (
+                    <tr key={item.id} onClick={() => toggleSelect(item.id)} className={`${sel ? 'bg-emerald-50/40' : 'hover:bg-slate-50/50'} transition-colors cursor-pointer`}>
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={sel} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-400 text-center">#{item.serialNo}</td>
+                      <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-slate-600">{item.shelf1}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-slate-600">{item.moq}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-800">{currentStock(item.qty)}</td>
+                      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="number"
+                          value={rowEdits[item.id]?.orderQty ?? item.orderQty}
+                          onChange={(e) => handleRowEdit(item.id, 'orderQty', e.target.value)}
+                          className="w-16 px-2 py-1 border border-blue-300 rounded font-black text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none text-right"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

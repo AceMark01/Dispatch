@@ -18,17 +18,25 @@ const buildPdf = (items) => {
   doc.setTextColor(0);
   autoTable(doc, {
     startY: 27,
-    head: [['SN', 'Item Name', 'Group', 'Current Stock', 'Order Qty']],
+    head: [['SN', 'Item Name', 'Reorder Level', 'Shelf Qty', 'MOQ', 'Current Stock', 'Order Qty']],
     body: items.map(i => [
       i.serialNo || '',
       i.itemName || '',
-      i.group || '',
+      String(i.roiQty ?? ''),
+      String(i.shelf1 ?? ''),
+      String(i.moq ?? ''),
       String(currentStock(i.qty)),
       String(i.orderQty ?? ''),
     ]),
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [37, 99, 235] },
-    columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right', fontStyle: 'bold' } },
+    columnStyles: {
+      2: { halign: 'right' },
+      3: { halign: 'right' },
+      4: { halign: 'right' },
+      5: { halign: 'right' },
+      6: { halign: 'right', fontStyle: 'bold' },
+    },
   });
   return doc;
 };
