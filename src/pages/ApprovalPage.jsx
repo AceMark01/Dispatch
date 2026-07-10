@@ -127,14 +127,23 @@ const ApprovalPage = () => {
   })();
 
   const dateItems = selectedDate ? pendingItems.filter(i => fmtDate(i.uploadedAt) === selectedDate) : [];
+  // Search-filtered view of the date's items (search does not affect selection)
+  const shownDateItems = dateItems.filter(i =>
+    !search ||
+    (i.itemName || '').toLowerCase().includes(search.toLowerCase()) ||
+    (i.group || '').toLowerCase().includes(search.toLowerCase()) ||
+    (i.item || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(i.serialNo || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   const openDate = (date) => {
+    setSearch('');
     setSelectedDate(date);
     // select all of that date's items by default
     setSelectedIds(pendingItems.filter(i => fmtDate(i.uploadedAt) === date).map(i => i.id));
   };
 
-  const resetFlow = () => { setSubmitted(false); setSelectedDate(null); setSelectedIds([]); setRowEdits({}); };
+  const resetFlow = () => { setSubmitted(false); setSelectedDate(null); setSelectedIds([]); setRowEdits({}); setSearch(''); };
 
   const submitOrder = () => {
     if (selectedIds.length === 0) { toast.error('Please select at least one item'); return; }
@@ -152,7 +161,7 @@ const ApprovalPage = () => {
         <h1 className="text-2xl font-bold text-slate-800">Confirm order</h1>
         <div className="flex items-center gap-2 flex-wrap">
           {(activeTab === 'History' || selectedDate) && (
-            <ShareOrderButton items={(activeTab === 'Pending' && selectedDate ? dateItems : filteredItems).map(enrichItem)} label="Share PDF" />
+            <ShareOrderButton items={(activeTab === 'Pending' && selectedDate ? dateItems : filteredItems).map(enrichItem)} label="Share" />
           )}
           <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
             <button
@@ -221,7 +230,7 @@ const ApprovalPage = () => {
         <div className="flex-1 glass-strong rounded-2xl overflow-hidden flex flex-col">
           <div className="p-3 border-b border-white/40 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <button onClick={() => { setSelectedDate(null); setSelectedIds([]); }} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0"><ChevronLeft size={18} /></button>
+              <button onClick={() => { setSelectedDate(null); setSelectedIds([]); setSearch(''); }} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0"><ChevronLeft size={18} /></button>
               <div className="min-w-0">
                 <h3 className="font-bold text-slate-800 flex items-center gap-1.5"><Calendar size={15} className="text-blue-600" /> {selectedDate}</h3>
                 <p className="text-[11px] text-slate-500">{selectedIds.length} of {dateItems.length} selected</p>
@@ -235,6 +244,19 @@ const ApprovalPage = () => {
               <Check size={16} /> Submit Order ({selectedIds.length})
             </button>
           </div>
+          {/* Search */}
+          <div className="px-3 py-2 border-b border-slate-100">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search item or group..."
+                className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+              />
+            </div>
+          </div>
           <label className="md:hidden flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-white/40 cursor-pointer">
             <input
               type="checkbox"
@@ -247,7 +269,10 @@ const ApprovalPage = () => {
 
           {/* Mobile: cards */}
           <div className="md:hidden flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide bg-slate-50/50">
-            {dateItems.map(rawItem => {
+            {shownDateItems.length === 0 && (
+              <div className="py-12 text-center text-slate-400 text-sm">No items match your search</div>
+            )}
+            {shownDateItems.map(rawItem => {
               const item = enrichItem(rawItem);
               const sel = selectedIds.includes(item.id);
               return (
@@ -267,7 +292,7 @@ const ApprovalPage = () => {
                     />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-bold text-slate-800 text-sm leading-snug">{item.itemName}</h3>
-                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">#{item.serialNo}</p>
+                      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{item.group}</p>
                     </div>
                     <div className="text-right shrink-0" onClick={(e) => e.stopPropagation()}>
                       <p className="text-[9px] text-blue-500 uppercase font-bold">Order Qty</p>
@@ -316,8 +341,8 @@ const ApprovalPage = () => {
                       className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
                   </th>
-                  <th className="px-4 py-3 w-16 text-center">SN</th>
                   <th className="px-4 py-3">Item Name</th>
+                  <th className="px-4 py-3">Group</th>
                   <th className="px-4 py-3 w-28 text-right">Reorder Level</th>
                   <th className="px-4 py-3 w-24 text-right">Shelf Qty</th>
                   <th className="px-4 py-3 w-20 text-right">MOQ</th>
@@ -326,7 +351,10 @@ const ApprovalPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-[12px]">
-                {dateItems.map(rawItem => {
+                {shownDateItems.length === 0 && (
+                  <tr><td colSpan="8" className="py-12 text-center text-slate-400 text-sm italic">No items match your search</td></tr>
+                )}
+                {shownDateItems.map(rawItem => {
                   const item = enrichItem(rawItem);
                   const sel = selectedIds.includes(item.id);
                   return (
@@ -334,8 +362,8 @@ const ApprovalPage = () => {
                       <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <input type="checkbox" checked={sel} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
                       </td>
-                      <td className="px-4 py-3 font-medium text-slate-400 text-center">#{item.serialNo}</td>
                       <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
+                      <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{item.group}</td>
                       <td className="px-4 py-3 text-right font-bold text-slate-800">{item.roiQty}</td>
                       <td className="px-4 py-3 text-right font-semibold text-slate-600">{item.shelf1}</td>
                       <td className="px-4 py-3 text-right font-semibold text-slate-600">{item.moq}</td>

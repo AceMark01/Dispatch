@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Share2, MessageCircle, Mail, Download, X, FileText } from 'lucide-react';
+import { Share2, Download, X, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
@@ -53,18 +53,34 @@ const ShareOrderButton = ({ items = [], label = 'Share' }) => {
 
   const canShareFiles = (file) => navigator.canShare && navigator.canShare({ files: [file] });
 
-  const handleDownload = () => {
+  const handleDownloadPdf = () => {
     if (!items.length) { toast.error('No items to share'); return; }
     buildPdf(items).save('order-list.pdf');
     toast.success('PDF downloaded');
     setOpen(false);
   };
 
-  const handleShare = async (channel) => {
+  const handleDownloadCsv = () => {
+    if (!items.length) { toast.error('No items to share'); return; }
+    const head = ['SN', 'Item Name', 'Reorder Level', 'Shelf Qty', 'MOQ', 'Current Stock', 'Order Qty'];
+    const esc = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const rows = items.map(i => [i.serialNo, i.itemName, i.roiQty, i.shelf1, i.moq, currentStock(i.qty), i.orderQty]);
+    const csv = [head, ...rows].map(r => r.map(esc).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'order-list.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV downloaded');
+    setOpen(false);
+  };
+
+  // Single "Share PDF" action — native share sheet (WhatsApp / Email / anything),
+  // with a WhatsApp fallback on desktop.
+  const handleShare = async () => {
     if (!items.length) { toast.error('No items to share'); return; }
     const { doc, file } = makeFile();
 
-    // Mobile / supported browsers: native share sheet (PDF attaches to WhatsApp, Email, etc.)
     if (canShareFiles(file)) {
       try {
         await navigator.share({ files: [file], title: 'Order List', text: 'Order list — please review the order quantities.' });
@@ -73,19 +89,12 @@ const ShareOrderButton = ({ items = [], label = 'Share' }) => {
       return;
     }
 
-    // Desktop fallback: download the PDF, then open the chosen channel
+    // Desktop fallback: download the PDF, then open WhatsApp to attach it
     doc.save('order-list.pdf');
-    if (channel === 'whatsapp') {
-      const num = (whatsapp.partyPhone || '').replace(/[^0-9]/g, '');
-      const text = encodeURIComponent('Order list ready — please see the attached PDF for order quantities.');
-      window.open(num ? `https://wa.me/${num}?text=${text}` : `https://wa.me/?text=${text}`, '_blank');
-      toast('PDF downloaded — attach it in WhatsApp', { icon: '📎' });
-    } else if (channel === 'email') {
-      const subject = encodeURIComponent('Order List — Acemark');
-      const body = encodeURIComponent('Please find the order list attached (the PDF has been downloaded).');
-      window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
-      toast('PDF downloaded — attach it in your email', { icon: '📎' });
-    }
+    const num = (whatsapp.partyPhone || '').replace(/[^0-9]/g, '');
+    const text = encodeURIComponent('Order list ready — please see the attached PDF for order quantities.');
+    window.open(num ? `https://wa.me/${num}?text=${text}` : `https://wa.me/?text=${text}`, '_blank');
+    toast('PDF downloaded — attach it in the chat', { icon: '📎' });
     setOpen(false);
   };
 
@@ -107,20 +116,22 @@ const ShareOrderButton = ({ items = [], label = 'Share' }) => {
             </div>
             <p className="text-xs text-slate-500">{items.length} items · Item Name, Current Stock, Order Qty</p>
             <div className="grid grid-cols-1 gap-2">
-              <button onClick={() => handleShare('whatsapp')} className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors">
-                <MessageCircle className="text-emerald-600" size={20} />
-                <span className="text-sm font-bold text-emerald-800">Share on WhatsApp</span>
+              <button onClick={handleShare} className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                <Share2 className="text-emerald-600" size={20} />
+                <span className="text-sm font-bold text-emerald-800">Share PDF</span>
               </button>
-              <button onClick={() => handleShare('email')} className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-colors">
-                <Mail className="text-blue-600" size={20} />
-                <span className="text-sm font-bold text-blue-800">Send via Email</span>
-              </button>
-              <button onClick={handleDownload} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
-                <Download className="text-slate-600" size={20} />
-                <span className="text-sm font-bold text-slate-700">Download PDF</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={handleDownloadPdf} className="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <Download className="text-slate-600" size={18} />
+                  <span className="text-sm font-bold text-slate-700">PDF</span>
+                </button>
+                <button onClick={handleDownloadCsv} className="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <Download className="text-slate-600" size={18} />
+                  <span className="text-sm font-bold text-slate-700">CSV</span>
+                </button>
+              </div>
             </div>
-            <p className="text-[10px] text-slate-400 text-center">On phone, the app share sheet opens and the PDF attaches directly. On desktop, the PDF downloads to attach.</p>
+            <p className="text-[10px] text-slate-400 text-center">On phone, Share opens the app sheet (WhatsApp, Email…) and attaches the PDF directly.</p>
           </div>
         </div>, document.body)}
     </>

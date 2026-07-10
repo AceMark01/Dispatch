@@ -1,44 +1,47 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const parseSheetDate = (dateStr) => {
   if (!dateStr) return null;
+  const s = dateStr.toString().trim();
 
-  // Try ISO string first (e.g. from internal state)
-  const parsed = new Date(dateStr);
-  if (!isNaN(parsed.getTime())) return parsed.toISOString();
-
-  // Parse DD/MM/YY HH:MM AM/PM — this is what formatDateTime writes to the sheet
-  // Example: "01/06/26 4:14 PM" means 1st June 2026
-  const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?(?:\s+(AM|PM))?$/i);
-  if (match) {
-    const [_, day, month, year, hours, minutes, seconds, ampm] = match;
-    let h = parseInt(hours, 10);
-    if (ampm) {
-      if (ampm.toUpperCase() === 'PM' && h < 12) h += 12;
-      if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
+  // IMPORTANT: parse our own DD/MM/YY(YY) format FIRST — day comes before month.
+  // (new Date("10/07/26") would wrongly read it as US MM/DD = Oct 7 instead of 10 Jul.)
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)?)?$/i);
+  if (m) {
+    const [, day, month, year, hh, mm, ss, ap] = m;
+    let h = hh ? parseInt(hh, 10) : 0;
+    if (ap) {
+      const P = ap.toUpperCase();
+      if (P === 'PM' && h < 12) h += 12;
+      if (P === 'AM' && h === 12) h = 0;
     }
     let y = parseInt(year, 10);
     if (y < 100) y += 2000;
-    // Day comes BEFORE month: DD/MM/YY
-    const d = new Date(y, parseInt(month, 10) - 1, parseInt(day, 10), h, parseInt(minutes, 10), seconds ? parseInt(seconds, 10) : 0);
+    const d = new Date(y, parseInt(month, 10) - 1, parseInt(day, 10), h, mm ? parseInt(mm, 10) : 0, ss ? parseInt(ss, 10) : 0);
     if (!isNaN(d.getTime())) return d.toISOString();
   }
-  return dateStr;
+
+  // ISO strings and month-name formats ("10 Jul 2026 …") — unambiguous for new Date()
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) return parsed.toISOString();
+  return s;
 };
 
+// Write dates with a month NAME ("10 Jul 2026 01:47 PM") so Google Sheets can never
+// swap day/month (US MM/DD) and turn e.g. July into October.
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   const p = n => n.toString().padStart(2, '0');
-  const date = `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear().toString().slice(-2)}`;
   let hours = d.getHours();
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   hours = hours ? hours : 12;
-  const time = `${p(hours)}:${p(d.getMinutes())} ${ampm}`;
-  return `${date} ${time}`;
+  return `${p(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${p(hours)}:${p(d.getMinutes())} ${ampm}`;
 };
 
 const calculateDelay = (plannedStr, actualStr) => {

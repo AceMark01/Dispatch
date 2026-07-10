@@ -452,7 +452,7 @@ const UploadReport = () => {
         <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-4">
           <div className="flex justify-between items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-slate-800">Master Report ({items.length} records)</h3>
-            <ShareOrderButton items={filteredItems.map(enrichItem)} label="Share PDF" />
+            <ShareOrderButton items={filteredItems.map(enrichItem)} label="Share" />
           </div>
 
           <div className="flex gap-4">
