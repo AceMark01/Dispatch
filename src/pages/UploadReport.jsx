@@ -206,14 +206,15 @@ const UploadReport = () => {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const p = n => n.toString().padStart(2, '0');
-    const date = `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear().toString().slice(-2)}`;
     let hours = d.getHours();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
     hours = hours ? hours : 12;
-    const time = `${p(hours)}:${p(d.getMinutes())} ${ampm}`;
-    return `${date} ${time}`;
+    // Unambiguous month-name format, e.g. "06 Jul 26, 02:54 PM"
+    return `${p(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}, ${p(hours)}:${p(d.getMinutes())} ${ampm}`;
   };
 
   return (

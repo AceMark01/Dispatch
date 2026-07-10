@@ -619,7 +619,7 @@ const ApprovalPage = () => {
                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Uploaded</span>
                 )}
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-700 border border-blue-300/40 backdrop-blur-sm shadow-sm">
-                  {new Date(item.uploadedAt).toLocaleDateString()}
+                  {fmtDate(item.uploadedAt)}
                 </span>
               </div>
             </div>
@@ -738,7 +738,7 @@ const ApprovalPage = () => {
 
                   {activeTab === 'History' && (
                     <td className="px-4 py-3 text-center text-[10px] text-slate-400 font-medium">
-                      {new Date(item.approvedAt || item.uploadedAt).toLocaleDateString()}
+                      {fmtDate(item.approvedAt || item.uploadedAt)}
                     </td>
                   )}
                 </tr>

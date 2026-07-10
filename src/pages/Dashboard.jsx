@@ -21,6 +21,12 @@ const STATUS_META = {
   'Rejected': { label: 'Rejected', color: '#ef4444', badge: 'bg-red-100 text-red-700' },
 };
 
+// Unambiguous month-name date, e.g. "06 Jul 2026"
+const fmtDate = (d) => {
+  const dt = new Date(d);
+  return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 const Dashboard = () => {
   const { items, backendItems, fetchBackendData } = useDispatchStore();
 
@@ -249,7 +255,7 @@ const Dashboard = () => {
                 return (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-4 py-3 text-[10px] text-slate-500 font-medium whitespace-nowrap">
-                      {new Date(item.approvedAt || item.uploadedAt).toLocaleDateString()}
+                      {fmtDate(item.approvedAt || item.uploadedAt)}
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-400 text-center">#{item.serialNo}</td>
                     <td className="px-4 py-3 font-bold text-slate-800">{item.itemName}</td>
