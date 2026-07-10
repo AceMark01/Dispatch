@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
-import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal, Calendar, ChevronRight, ChevronLeft, PartyPopper, MessageSquare } from 'lucide-react';
+import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal, Calendar, ChevronRight, ChevronLeft, PartyPopper, MessageSquare, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
 import ShareOrderButton from '../components/ShareOrderButton';
@@ -206,16 +206,23 @@ const ApprovalPage = () => {
 
       {/* Feedback modal — opened from the Thank You screen */}
       {showFeedbackModal && (
-        <div className="fixed inset-0 z-[80] modal-backdrop flex items-center justify-center p-4" onClick={() => setShowFeedbackModal(false)}>
-          <div className="glass-strong rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-6 text-white text-center rounded-t-3xl relative">
-              <button onClick={() => setShowFeedbackModal(false)} className="absolute right-4 top-4 text-white/80 hover:text-white">
+        <div className="fixed inset-0 z-[80] modal-backdrop flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowFeedbackModal(false)}>
+          <div className="fb-rise glass-strong rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="fb-animated-gradient px-6 py-7 text-white text-center rounded-t-3xl relative overflow-hidden">
+              <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-white/15 blur-2xl" />
+              <div className="absolute -bottom-10 -right-6 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+              <button onClick={() => setShowFeedbackModal(false)} className="absolute right-4 top-4 text-white/80 hover:text-white z-10">
                 <X size={22} />
               </button>
-              <h2 className="text-xl font-bold">Share your feedback</h2>
-              <p className="text-blue-100 mt-1 text-sm">Help us serve you better</p>
+              <div className="relative">
+                <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
+                  <Sparkles size={26} className="text-white" />
+                </div>
+                <h2 className="text-xl font-black tracking-tight">Share your feedback</h2>
+                <p className="text-white/80 mt-1 text-sm">We'd love to hear how we're doing</p>
+              </div>
             </div>
-            <div className="p-6">
+            <div className="p-6 sm:p-7">
               <FeedbackForm source="Order Confirm" />
             </div>
           </div>
