@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatchStore } from '../store/dispatchStore';
-import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal, Calendar, ChevronRight, ChevronLeft, PartyPopper } from 'lucide-react';
+import { Check, X, Search, Filter, History, MousePointer2, SlidersHorizontal, Calendar, ChevronRight, ChevronLeft, PartyPopper, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
 import ShareOrderButton from '../components/ShareOrderButton';
@@ -22,6 +22,7 @@ const ApprovalPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitCount, setSubmitCount] = useState(0);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Load Backend master sheet so we can map Item Code / Group / MOQ + Order Qty
   useEffect(() => {
@@ -144,7 +145,7 @@ const ApprovalPage = () => {
     setSelectedIds(pendingItems.filter(i => fmtDate(i.uploadedAt) === date).map(i => i.id));
   };
 
-  const resetFlow = () => { setSubmitted(false); setSelectedDate(null); setSelectedIds([]); setRowEdits({}); setSearch(''); };
+  const resetFlow = () => { setSubmitted(false); setSelectedDate(null); setSelectedIds([]); setRowEdits({}); setSearch(''); setShowFeedbackModal(false); };
 
   const submitOrder = () => {
     if (selectedIds.length === 0) { toast.error('Please select at least one item'); return; }
@@ -183,7 +184,7 @@ const ApprovalPage = () => {
 
       {/* ===== Pending: party date-based confirm flow ===== */}
       {activeTab === 'Pending' && submitted && (
-        <div className="flex-1 glass-strong rounded-2xl overflow-y-auto flex flex-col items-center text-center p-8 gap-4">
+        <div className="flex-1 glass-strong rounded-2xl flex flex-col items-center justify-center text-center p-8 gap-4">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 animate-in zoom-in duration-300">
             <Check size={44} className="text-white" strokeWidth={3} />
           </div>
@@ -192,15 +193,32 @@ const ApprovalPage = () => {
             Your order has been confirmed successfully. We've received <b className="text-emerald-600">{submitCount} item{submitCount > 1 ? 's' : ''}</b> and our team will process your dispatch shortly. 🙏
           </p>
 
-          {/* Rate your experience — feedback captured right after confirming */}
-          <div className="w-full max-w-md mt-2 pt-5 border-t border-slate-200/70">
-            <p className="text-lg font-bold text-slate-800 mb-3">How was your experience?</p>
-            <FeedbackForm source="Order Confirm" compact />
+          <div className="flex items-center gap-3 mt-2 flex-wrap justify-center">
+            <button onClick={() => setShowFeedbackModal(true)} className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all">
+              <MessageSquare size={18} /> Give Feedback
+            </button>
+            <button onClick={resetFlow} className="px-6 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold shadow-sm hover:bg-slate-50 transition-all">
+              Back
+            </button>
           </div>
+        </div>
+      )}
 
-          <button onClick={resetFlow} className="mt-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all">
-            Back to Dates
-          </button>
+      {/* Feedback modal — opened from the Thank You screen */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-[80] modal-backdrop flex items-center justify-center p-4" onClick={() => setShowFeedbackModal(false)}>
+          <div className="glass-strong rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-6 text-white text-center rounded-t-3xl relative">
+              <button onClick={() => setShowFeedbackModal(false)} className="absolute right-4 top-4 text-white/80 hover:text-white">
+                <X size={22} />
+              </button>
+              <h2 className="text-xl font-bold">Share your feedback</h2>
+              <p className="text-blue-100 mt-1 text-sm">Help us serve you better</p>
+            </div>
+            <div className="p-6">
+              <FeedbackForm source="Order Confirm" />
+            </div>
+          </div>
         </div>
       )}
 

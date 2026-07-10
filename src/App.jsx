@@ -8,7 +8,7 @@ import UploadReport from './pages/UploadReport';
 import ApprovalPage from './pages/ApprovalPage';
 import ApprovedPage from './pages/ApprovedPage';
 import Setting from './pages/Setting';
-import FeedbackPage from './pages/FeedbackPage';
+import Feedback from './pages/Feedback';
 import ProtectedRoute from './components/ProtectedRoute';
 import RequireAccess, { HomeRedirect } from './components/RequireAccess';
 
@@ -19,7 +19,6 @@ function App() {
         <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/feedback" element={<FeedbackPage />} />
 
           <Route path="/" element={
             <ProtectedRoute>
@@ -31,6 +30,7 @@ function App() {
             <Route path="upload" element={<RequireAccess pageKey="Upload"><UploadReport /></RequireAccess>} />
             <Route path="approval" element={<RequireAccess pageKey="Confirm order"><ApprovalPage /></RequireAccess>} />
             <Route path="approved" element={<RequireAccess pageKey="Approved"><ApprovedPage /></RequireAccess>} />
+            <Route path="feedback" element={<Feedback />} />
             <Route path="setting" element={<RequireAccess pageKey="Setting"><Setting /></RequireAccess>} />
           </Route>
 

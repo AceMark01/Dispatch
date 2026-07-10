@@ -10,6 +10,7 @@ import {
   User,
   Users,
   Settings,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { canAccess } from '../utils/access';
@@ -112,6 +113,23 @@ const Sidebar = ({ isOpen, onClose }) => {
                 )}
               </React.Fragment>
             ))}
+
+            {/* Feedback — always available, shown at the bottom for every user */}
+            <div className="pt-2 mt-2 border-t border-white/40">
+              <NavLink
+                to="/feedback"
+                onClick={onClose}
+                className={({ isActive }) => `
+                  flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group
+                  ${isActive
+                    ? 'bg-sky-100 text-sky-600 border-l-4 border-sky-600'
+                    : 'text-gray-700 hover:bg-sky-50 hover:text-sky-600 border-l-4 border-transparent'}
+                `}
+              >
+                <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Feedback</span>
+              </NavLink>
+            </div>
           </nav>
 
           {/* User Profile Section */}
