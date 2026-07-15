@@ -122,8 +122,11 @@ function FeedbackForm({ source = '', compact = false }) {
                 aria-label={RATING_LABELS[star - 1]}
               >
                 <Star
+                  strokeWidth={1.75}
                   className={`h-10 w-10 sm:h-11 sm:w-11 transition-all duration-200 ${
-                    on ? `text-yellow-400 fill-yellow-400 fb-star-active ${rating === star ? 'fb-pop' : ''}` : 'text-slate-300'
+                    on
+                      ? `text-yellow-400 fill-yellow-400 fb-star-active ${rating === star ? 'fb-pop' : ''}`
+                      : 'text-amber-400 fill-amber-100'
                   }`}
                 />
               </button>

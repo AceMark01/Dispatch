@@ -6,6 +6,12 @@ import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '
 import ShareOrderButton from '../components/ShareOrderButton';
 import FeedbackForm from '../components/FeedbackForm';
 
+// Unambiguous day-month-year label (module-level so it can be used anywhere in this file)
+const fmtDate = (d) => {
+  const dt = new Date(d);
+  return isNaN(dt.getTime()) ? 'Unknown date' : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 const ApprovalPage = () => {
   const { items, updateItemStatus, backendItems, fetchBackendData } = useDispatchStore();
   const [activeTab, setActiveTab] = useState('Pending');
@@ -23,6 +29,8 @@ const ApprovalPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [submitCount, setSubmitCount] = useState(0);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  // History is browsed date-wise, same as Pending. null = show the date list.
+  const [histDate, setHistDate] = useState(null);
 
   // Load Backend master sheet so we can map Item Code / Group / MOQ + Order Qty
   useEffect(() => {
@@ -42,7 +50,9 @@ const ApprovalPage = () => {
       i.serialNo?.toString().includes(search);
     const matchesGroup = filterGroup === 'All' || i.group === filterGroup;
     const matchesStatus = filterStatus === 'All' || i.status === filterStatus;
-    return matchesSearch && matchesGroup && matchesStatus;
+    // In History we only show the drilled-in date's items
+    const matchesHistDate = activeTab !== 'History' || !histDate || fmtDate(i.uploadedAt) === histDate;
+    return matchesSearch && matchesGroup && matchesStatus && matchesHistDate;
   });
 
   // No pagination — show all items (the table scrolls)
@@ -112,15 +122,21 @@ const ApprovalPage = () => {
   };
 
   // ===== Party date-based confirm flow =====
-  const fmtDate = (d) => {
-    const dt = new Date(d);
-    return isNaN(dt.getTime()) ? 'Unknown date' : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
-
   // Group pending items by their upload date (most recent first)
   const pendingByDate = (() => {
     const map = new Map();
     pendingItems.forEach(i => {
+      const key = fmtDate(i.uploadedAt);
+      if (!map.has(key)) map.set(key, { date: key, ts: new Date(i.uploadedAt).getTime() || 0, items: [] });
+      map.get(key).items.push(i);
+    });
+    return [...map.values()].sort((a, b) => b.ts - a.ts);
+  })();
+
+  // Group history (confirmed/rejected) items by their upload date (most recent first)
+  const historyByDate = (() => {
+    const map = new Map();
+    historyItems.forEach(i => {
       const key = fmtDate(i.uploadedAt);
       if (!map.has(key)) map.set(key, { date: key, ts: new Date(i.uploadedAt).getTime() || 0, items: [] });
       map.get(key).items.push(i);
@@ -145,7 +161,7 @@ const ApprovalPage = () => {
     setSelectedIds(pendingItems.filter(i => fmtDate(i.uploadedAt) === date).map(i => i.id));
   };
 
-  const resetFlow = () => { setSubmitted(false); setSelectedDate(null); setSelectedIds([]); setRowEdits({}); setSearch(''); setShowFeedbackModal(false); };
+  const resetFlow = () => { setSubmitted(false); setSelectedDate(null); setHistDate(null); setSelectedIds([]); setRowEdits({}); setSearch(''); setShowFeedbackModal(false); };
 
   const submitOrder = () => {
     if (selectedIds.length === 0) { toast.error('Please select at least one item'); return; }
@@ -162,7 +178,7 @@ const ApprovalPage = () => {
       <div className="flex justify-between items-center flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-slate-800">Confirm order</h1>
         <div className="flex items-center gap-2 flex-wrap">
-          {(activeTab === 'History' || selectedDate) && (
+          {((activeTab === 'History' && histDate) || (activeTab === 'Pending' && selectedDate)) && (
             <ShareOrderButton items={(activeTab === 'Pending' && selectedDate ? dateItems : filteredItems).map(enrichItem)} label="Share" />
           )}
           <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
@@ -418,8 +434,54 @@ const ApprovalPage = () => {
         </div>
       )}
 
-      {activeTab === 'History' && (
+      {/* ===== History: pick a date ===== */}
+      {activeTab === 'History' && !histDate && (
+        <div className="flex-1 glass-strong rounded-2xl overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-white/40">
+            <h3 className="font-bold text-slate-800">Confirmed orders by date</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Tap a date to view and share that day's confirmed order.</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide">
+            {historyByDate.length === 0 && (
+              <div className="py-16 text-center text-slate-400 text-sm">No confirmed orders yet</div>
+            )}
+            {historyByDate.map(g => {
+              const qty = g.items.reduce((s, it) => s + (enrichItem(it).orderQty || 0), 0);
+              return (
+                <button
+                  key={g.date}
+                  onClick={() => { setSearch(''); setHistDate(g.date); }}
+                  className="w-full flex items-center justify-between gap-3 p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group text-left"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 shrink-0"><Calendar size={20} /></div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-800">{g.date}</p>
+                      <p className="text-[11px] text-slate-500">{g.items.length} item{g.items.length > 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <p className="text-[9px] text-blue-500 uppercase font-bold">Total Qty</p>
+                      <p className="text-lg font-black text-blue-600 leading-none">{qty}</p>
+                    </div>
+                    <ChevronRight className="text-slate-400 group-hover:text-blue-600 transition-colors" size={20} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ===== History: items for the selected date ===== */}
+      {activeTab === 'History' && histDate && (
       <>
+      {/* Back to date list */}
+      <div className="flex items-center gap-2">
+        <button onClick={() => { setHistDate(null); setSearch(''); }} className="p-2 rounded-lg bg-white border border-slate-200 shadow-sm hover:bg-slate-100 text-slate-600 shrink-0"><ChevronLeft size={18} /></button>
+        <h3 className="font-bold text-slate-800 flex items-center gap-1.5"><Calendar size={15} className="text-blue-600" /> {histDate}</h3>
+      </div>
       {/* Filters & Bulk Actions */}
       <div className="flex flex-col gap-3">
         <div className="flex gap-4">
