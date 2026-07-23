@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { parseNum } from '../utils/inventory';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -43,6 +44,28 @@ const formatDateTime = (dateStr) => {
   hours = hours ? hours : 12;
   return `${p(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()} ${p(hours)}:${p(d.getMinutes())} ${ampm}`;
 };
+
+// One Report-sheet row (columns A..Q) for an uploaded item.
+// Order Qty (N) stays blank here — it is written when the order is confirmed.
+const buildReportRow = (itemObj) => ([
+  formatDateTime(itemObj.uploadedAt || new Date().toISOString()), // A
+  itemObj.serialNo || '',                                        // B
+  itemObj.itemName || '',                                        // C
+  itemObj.group || '',                                           // D
+  itemObj.item || '',                                            // E
+  itemObj.roiQty || '',                                          // F
+  itemObj.shelf1 || '',                                          // G
+  itemObj.qty || '',                                             // H
+  itemObj.unit || '',                                            // I
+  null,                                                          // J
+  formatDateTime(itemObj.actual1),                               // K
+  null,                                                          // L
+  null,                                                          // M
+  null,                                                          // N
+  formatDateTime(itemObj.actual2),                               // O
+  null,                                                          // P
+  null                                                           // Q
+]);
 
 const calculateDelay = (plannedStr, actualStr) => {
   if (!plannedStr || !actualStr) return '';
@@ -126,9 +149,13 @@ export const useDispatchStore = create(
       error: null,
       nextDispatchNo: 1,
 
-      // Add items (e.g. from Excel)
+      // Add items (e.g. from Excel).
+      // Only rows that actually need ordering (Order Qty > 0) are kept — those
+      // are the only ones written to the Report sheet, so app and sheet match.
       addItems: (newItems) => set((state) => {
-        const itemsToAdd = newItems.map(item => {
+        const orderable = newItems.filter(i => parseNum(i.orderQty) > 0);
+
+        const itemsToAdd = orderable.map(item => {
           const uploadedAt = item.uploadedAt || new Date().toISOString();
           const baseItem = {
             ...item,
@@ -143,18 +170,12 @@ export const useDispatchStore = create(
           return computeSheetFields(baseItem, 'Waiting for Approval');
         });
 
-        // Sequential sync to Google Sheet with delay to avoid rate limiting
-        (async () => {
-          for (const item of itemsToAdd) {
-            try {
-              await get().syncNewItemToSheet(item);
-            } catch (e) {
-              console.error('Failed to sync item:', item.serialNo, e);
-            }
-            // 300ms delay between each request to avoid Google Apps Script rate limits
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        })();
+        // Write the whole upload to the sheet in ONE request (was one call per row)
+        if (itemsToAdd.length) {
+          get().syncNewItemsToSheet(itemsToAdd).catch(e =>
+            console.error('Failed to sync uploaded items:', e)
+          );
+        }
 
         return { items: [...state.items, ...itemsToAdd] };
       }),
@@ -371,29 +392,37 @@ export const useDispatchStore = create(
       syncNewItemToSheet: async (itemObj) => {
         try {
           const { insertRow } = await import('../utils/api');
-
-          const rowData = [
-            formatDateTime(itemObj.uploadedAt || new Date().toISOString()),
-            itemObj.serialNo || '',
-            itemObj.itemName || '',
-            itemObj.group || '',
-            itemObj.item || '',
-            itemObj.roiQty || '',
-            itemObj.shelf1 || '',
-            itemObj.qty || '',
-            itemObj.unit || '',
-            null, // J
-            formatDateTime(itemObj.actual1), // K
-            null, // L
-            null, // M
-            null, // N
-            formatDateTime(itemObj.actual2), // O
-            null, // P
-            null // Q
-          ];
-          await insertRow(rowData, 'Report');
+          await insertRow(buildReportRow(itemObj), 'Report');
         } catch (error) {
           console.error("Failed to sync new item to sheet:", error);
+        }
+      },
+
+      // Sync ALL newly uploaded items in a single request — one Apps Script
+      // call for the whole upload instead of one (plus a delay) per row.
+      // If the deployed Apps Script doesn't know 'insertBatch' yet, fall back to
+      // the old row-by-row insert so an upload is never silently lost.
+      syncNewItemsToSheet: async (itemObjs) => {
+        const { insertRows, insertRow } = await import('../utils/api');
+        const rowsData = itemObjs.map(buildReportRow);
+
+        try {
+          const res = await insertRows(rowsData, 'Report');
+          if (res && res.success === false) {
+            throw new Error(res.error || 'Batch insert failed');
+          }
+          return res;
+        } catch (err) {
+          console.warn('Batch insert unavailable, falling back to row-by-row:', err);
+          for (const rowData of rowsData) {
+            try {
+              await insertRow(rowData, 'Report');
+            } catch (e) {
+              console.error('Failed to sync row:', rowData[1], e);
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          return { success: true, fallback: true };
         }
       },
 

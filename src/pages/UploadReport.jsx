@@ -4,7 +4,7 @@ import { useDispatchStore } from '../store/dispatchStore';
 import * as XLSX from 'xlsx';
 import { Upload, FileSpreadsheet, Check, AlertCircle, Trash2, Search, Filter, Download, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { buildBackendMap, enrichItem as enrichWithBackend, currentStock } from '../utils/inventory';
+import { buildBackendMap, enrichItem as enrichWithBackend, currentStock, parseNum } from '../utils/inventory';
 import { sendWhatsApp } from '../utils/api';
 import { useSettingsStore } from '../store/settingsStore';
 import ShareOrderButton from '../components/ShareOrderButton';
@@ -143,11 +143,19 @@ const UploadReport = () => {
     if (previewData.length === 0) return;
     setIsUploading(true);
     setTimeout(async () => {
+      // Only items that actually need ordering (Order Qty > 0) get saved
+      const saved = previewData.filter(i => parseNum(i.orderQty) > 0).length;
+      const skipped = previewData.length - saved;
+
       addItems(previewData);
       setPreviewData([]);
       setIsUploading(false);
       setShowImportModal(false);
-      toast.success('Data imported successfully');
+      toast.success(
+        skipped > 0
+          ? `Imported ${saved} item${saved === 1 ? '' : 's'} · ${skipped} skipped (Order Qty 0)`
+          : `Imported ${saved} item${saved === 1 ? '' : 's'}`
+      );
 
       // Send order-confirmation WhatsApp to the party (config saved in Settings)
       if (whatsapp.enabled && whatsapp.partyPhone) {

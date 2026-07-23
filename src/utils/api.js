@@ -35,6 +35,26 @@ export const insertRow = async (rowData, sheetName = 'Report') => {
   }
 };
 
+// Insert many rows in a SINGLE request (one Apps Script call for a whole upload).
+// Far faster than calling insertRow once per row.
+export const insertRows = async (rowsData, sheetName = 'Report') => {
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'insertBatch',
+        sheetName,
+        spreadsheetId: SPREADSHEET_ID,
+        rowsData
+      })
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error inserting rows:', error);
+    throw error;
+  }
+};
+
 // Send the approved order-confirmation WhatsApp template to a party.
 // params = { name, note, link }  -> template {{1}}, {{2}}, {{3}}
 export const sendWhatsApp = async (to, params) => {
