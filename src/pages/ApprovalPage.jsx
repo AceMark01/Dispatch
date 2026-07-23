@@ -31,6 +31,8 @@ const ApprovalPage = () => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   // History is browsed date-wise, same as Pending. null = show the date list.
   const [histDate, setHistDate] = useState(null);
+  // Mobile: search is collapsed behind an icon so the list gets the screen
+  const [showSearch, setShowSearch] = useState(false);
 
   // Load Backend master sheet so we can map Item Code / Group / MOQ + Order Qty
   useEffect(() => {
@@ -175,8 +177,10 @@ const ApprovalPage = () => {
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col p-4 space-y-4">
-      <div className="flex justify-between items-center flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-slate-800">Confirm order</h1>
+      {/* Page header — hidden on mobile once you drill into a date, so the
+          item list gets the screen instead of stacked chrome. */}
+      <div className={`${(selectedDate || histDate) ? 'hidden md:flex' : 'flex'} justify-between items-center flex-wrap gap-3`}>
+        <h1 className="text-lg md:text-2xl font-bold text-slate-800">Confirm order</h1>
         <div className="flex items-center gap-2 flex-wrap">
           {((activeTab === 'History' && histDate) || (activeTab === 'Pending' && selectedDate)) && (
             <ShareOrderButton items={(activeTab === 'Pending' && selectedDate ? dateItems : filteredItems).map(enrichItem)} label="Share" />
@@ -277,24 +281,54 @@ const ApprovalPage = () => {
 
       {activeTab === 'Pending' && !submitted && selectedDate && (
         <div className="flex-1 glass-strong rounded-2xl overflow-hidden flex flex-col">
-          <div className="p-3 border-b border-white/40 flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2 min-w-0">
-              <button onClick={() => { setSelectedDate(null); setSelectedIds([]); setSearch(''); }} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0"><ChevronLeft size={18} /></button>
-              <div className="min-w-0">
-                <h3 className="font-bold text-slate-800 flex items-center gap-1.5"><Calendar size={15} className="text-blue-600" /> {selectedDate}</h3>
-                <p className="text-[11px] text-slate-500">{selectedIds.length} of {dateItems.length} selected</p>
-              </div>
+          {/* Compact header: back + date on the left, actions on the right.
+              On mobile Submit moves to a fixed bottom bar and search collapses. */}
+          <div className="px-2.5 py-2 border-b border-white/40 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <button onClick={() => { setSelectedDate(null); setSelectedIds([]); setSearch(''); setShowSearch(false); }} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0"><ChevronLeft size={18} /></button>
+              <h3 className="font-bold text-slate-800 text-sm md:text-base flex items-center gap-1.5 truncate">
+                <Calendar size={14} className="text-blue-600 shrink-0" /> {selectedDate}
+              </h3>
             </div>
-            <button
-              onClick={submitOrder}
-              disabled={selectedIds.length === 0}
-              className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Check size={16} /> Submit Order ({selectedIds.length})
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Mobile-only: search toggle + share */}
+              <button
+                onClick={() => setShowSearch(s => !s)}
+                className={`md:hidden p-2 rounded-lg border transition-colors ${showSearch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}
+                aria-label="Search"
+              >
+                <Search size={16} />
+              </button>
+              <div className="md:hidden">
+                <ShareOrderButton items={dateItems.map(enrichItem)} label="" />
+              </div>
+              {/* Desktop: full submit button */}
+              <button
+                onClick={submitOrder}
+                disabled={selectedIds.length === 0}
+                className="hidden md:flex px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-teal-700 transition-all items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check size={16} /> Submit Order ({selectedIds.length})
+              </button>
+            </div>
           </div>
-          {/* Search */}
-          <div className="px-3 py-2 border-b border-slate-100">
+
+          {/* Select All + selected count — one slim row (was two separate blocks) */}
+          <label className="flex items-center justify-between gap-2 px-3 py-1.5 border-b border-slate-100 bg-white/40 cursor-pointer">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedIds.length === dateItems.length && dateItems.length > 0}
+                onChange={() => setSelectedIds(selectedIds.length === dateItems.length ? [] : dateItems.map(i => i.id))}
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-xs font-bold text-slate-700">Select All ({dateItems.length})</span>
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500">{selectedIds.length} selected</span>
+          </label>
+
+          {/* Search — always on desktop, toggled on mobile */}
+          <div className={`${showSearch ? 'block' : 'hidden'} md:block px-3 py-2 border-b border-slate-100`}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
@@ -306,15 +340,6 @@ const ApprovalPage = () => {
               />
             </div>
           </div>
-          <label className="md:hidden flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-white/40 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedIds.length === dateItems.length && dateItems.length > 0}
-              onChange={() => setSelectedIds(selectedIds.length === dateItems.length ? [] : dateItems.map(i => i.id))}
-              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-xs font-bold text-slate-700">Select All ({dateItems.length})</span>
-          </label>
 
           {/* Mobile: cards */}
           <div className="md:hidden flex-1 overflow-y-auto p-3 space-y-2 scrollbar-hide bg-slate-50/50">
@@ -430,6 +455,18 @@ const ApprovalPage = () => {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile: submit pinned to the bottom of the card, so the top stays
+              free for the item list and the action is thumb-reachable. */}
+          <div className="md:hidden px-3 py-2.5 border-t border-white/50 bg-white/85 backdrop-blur-md">
+            <button
+              onClick={submitOrder}
+              disabled={selectedIds.length === 0}
+              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Check size={17} /> Submit Order ({selectedIds.length})
+            </button>
           </div>
         </div>
       )}
